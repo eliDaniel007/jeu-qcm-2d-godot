@@ -1,0 +1,179 @@
+[gd_scene load_steps=7 format=3 uid="uid://dmhu8vpjdaqex"]
+
+[ext_resource type="Script" uid="uid://dxt52rm4a0qoe" path="res://Scenes/qcm/qcm.gd" id="1_s6xrm"]
+[ext_resource type="Script" uid="uid://fu1cba5cpl3c" path="res://Scenes/qcm/qcm_multiplayer.gd" id="2_multi"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2six8"]
+content_margin_left = 20.0
+content_margin_top = 20.0
+content_margin_right = 20.0
+content_margin_bottom = 20.0
+bg_color = Color(0.0113196, 0.0846664, 0.134125, 1)
+
+[sub_resource type="StyleBoxFlat" id="Go_Hover"]
+bg_color = Color(0, 0.631373, 0.894118, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="Go_Pressed"]
+bg_color = Color(0, 0.25098, 0.454902, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="Go_Normal"]
+bg_color = Color(0, 0.329412, 0.6, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[node name="QCM" type="Control"]
+z_index = 150
+z_as_relative = false
+layout_mode = 3
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -20.0
+offset_top = -20.0
+offset_right = 20.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_s6xrm")
+metadata/_edit_group_ = true
+
+[node name="BackgroundPanel" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -200.0
+offset_right = 400.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_2six8")
+
+[node name="QuestionLabel" type="Label" parent="BackgroundPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -250.5
+offset_top = 4.0
+offset_right = 250.5
+offset_bottom = 46.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 30
+text = "Quelle est la capitale de la France ?"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="BackgroundPanel"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -179.0
+offset_top = 75.0
+offset_right = 180.0
+offset_bottom = 275.0
+grow_horizontal = 2
+theme_override_constants/separation = 10
+
+[node name="AnswerButton1" type="Button" parent="BackgroundPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_disabled_color = Color(0, 0, 0, 1)
+theme_override_colors/font_color = Color(0.320012, 0.950387, 0.626099, 1)
+theme_override_font_sizes/font_size = 24
+text = "Londres"
+
+[node name="AnswerButton2" type="Button" parent="BackgroundPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.321569, 0.94902, 0.627451, 1)
+theme_override_font_sizes/font_size = 24
+text = "Conakry"
+
+[node name="AnswerButton3" type="Button" parent="BackgroundPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.321569, 0.94902, 0.627451, 1)
+theme_override_font_sizes/font_size = 24
+text = "Lyon"
+
+[node name="AnswerButton4" type="Button" parent="BackgroundPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.321569, 0.94902, 0.627451, 1)
+theme_override_font_sizes/font_size = 24
+text = "Paris"
+
+[node name="TimerLabel" type="Label" parent="BackgroundPanel"]
+layout_mode = 0
+offset_left = 121.0
+offset_top = 297.0
+offset_right = 674.0
+offset_bottom = 339.0
+theme_override_colors/font_color = Color(0.211765, 0.803922, 1, 1)
+theme_override_font_sizes/font_size = 30
+text = "Temps restant : 15 s"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="MultiManager" type="Node" parent="."]
+script = ExtResource("2_multi")
+
+[node name="OverlayNoir" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.85)
+
+[node name="EtiquetteTour" type="Label" parent="OverlayNoir"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -120.0
+offset_right = 300.0
+offset_bottom = -40.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 40
+text = "Préparez-vous..."
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="BoutonGo" type="Button" parent="OverlayNoir"]
+custom_minimum_size = Vector2(220, 64)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -110.0
+offset_top = -32.0
+offset_right = 110.0
+offset_bottom = 32.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+theme_override_styles/hover = SubResource("Go_Hover")
+theme_override_styles/pressed = SubResource("Go_Pressed")
+theme_override_styles/normal = SubResource("Go_Normal")
+text = "Go"

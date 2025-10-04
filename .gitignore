@@ -1,0 +1,110 @@
+# Godot 4+ specific ignores
+.godot/
+
+# Godot-specific ignores
+.import/
+
+# Imported files (automatically generated from the filesystem)
+*.tmp
+
+# Imported files (automatically generated from the filesystem)
+*.translation
+
+# Mono-specific ignores
+.mono/
+data_*/
+mono_crash.*.json
+
+# System/OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+
+# JetBrains IDEs
+.idea/
+
+# Visual Studio Code
+.vscode/
+
+# Visual Studio
+.vs/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Log files
+*.log
+
+# Backup files
+*.bak
+*.backup
+
+# Cache files
+*.cache
+
+# Build files
+build/
+dist/
+
+# Node modules (if using any JavaScript tools)
+node_modules/
+
+# Python (if using any Python tools)
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor specific
+*.swp
+*.swo
+*~
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS specific
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+
+# Linux specific
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# Cursor IDE files
+.cursor/
+
+# Windows user profile files (to avoid adding entire user directory)
+../../../*
+
+# Exclude everything outside the project directory
+/*
+!/data/
+!/Scenes/
+!/project.godot
+!/icon.svg
+!/icon.svg.import
+!/README.md
+!/README_pieges_bonus.md
+!/GUIDE_MARQUEURS_DEBUG.md
+!/animation_victoire_documentation.md
+!/architecture_log.md
+!/debug_marqueurs.gd
+!/debug_marqueurs.gd.uid
+!/test_pieges_bonus_simple.gd
+!/test_pieges_bonus_simple.gd.uid
+!/LICENSE
+!/.gitignore
