@@ -72,7 +72,7 @@ Un jeu 2D de type Mario développé avec Godot 4.4, où le joueur progresse en r
 ### Installation
 ```bash
 # Cloner le repository
-git clone https://github.com/VOTRE_USERNAME/jeu-qcm-2d-godot.git
+git clone https://github.com/eliDaniel007/jeu-qcm-2d-godot.git
 cd jeu-qcm-2d-godot
 
 # Ouvrir avec Godot
@@ -177,7 +177,7 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
 Développé avec ❤️ par **Elida Nielsen** pour UqarLife
 
-[![GitHub](https://img.shields.io/badge/GitHub-ElidaNielsen-blue?style=flat-square&logo=github)](https://github.com/VOTRE_USERNAME)
+[![GitHub](https://img.shields.io/badge/GitHub-eliDaniel007-blue?style=flat-square&logo=github)](https://github.com/eliDaniel007)
 
 ## 🙏 Remerciements
 
