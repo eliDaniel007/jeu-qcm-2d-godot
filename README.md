@@ -1,4 +1,4 @@
-# 🎮 Jeu 2D QCM avec Pièges et Bonus
+# Jeu 2D QCM avec Pièges et Bonus
 
 [![Godot](https://img.shields.io/badge/Godot-4.4-478CBF?style=flat-square&logo=godotengine)](https://godotengine.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
@@ -9,39 +9,39 @@ Un jeu 2D de type Mario développé avec Godot 4.4, où le joueur progresse en r
 
 ![Game Preview](https://via.placeholder.com/800x400/478CBF/FFFFFF?text=Jeu+QCM+2D+Godot)
 
-## 🎯 Concept du Jeu
+## Concept du Jeu
 
 - **Mécanique principale** : Répondre correctement aux QCM pour avancer
 - **Éléments de gameplay** : Pièges qui font reculer, bonus qui font avancer
 - **Style** : Jeu de plateforme 2D avec déplacement par cases
 - **Objectif** : Atteindre la fin du niveau en évitant les pièges et en collectant les bonus
 
-## 🚀 Fonctionnalités
+## Fonctionnalités
 
-### ✅ Système de QCM
+### Système de QCM
 - **117 questions** de culture générale variées
 - Questions sur l'histoire, la géographie, les sciences, l'art, la littérature
 - Interface utilisateur intuitive pour les réponses
 
-### 🎮 Mécaniques de Jeu
+### Mécaniques de Jeu
 - **Déplacement par cases** : Le joueur avance case par case selon ses bonnes réponses
 - **Système de pièges** : Zones qui font reculer le joueur
 - **Système de bonus** : Zones qui font avancer le joueur
 - **Gestion des étages** : Alternance gauche/droite selon l'étage
 
-### 🎨 Interface et Graphismes
+### Interface et Graphismes
 - **Sprites animés** pour le personnage principal
 - **Marqueurs visuels** pour les pièges (rouges) et bonus (verts)
 - **Animations** pour les effets de pièges et bonus
 - **Interface utilisateur** moderne et responsive
 
-### 🏗️ Architecture Technique
+### Architecture Technique
 - **Godot 4.4** avec GDScript
 - **Architecture modulaire** : gestionnaires séparés pour chaque système
 - **Système d'événements** avec EventBus
 - **Gestion d'état** du joueur et des combos
 
-## 📁 Structure du Projet
+## Structure du Projet
 
 ```
 ├── Scenes/
@@ -55,7 +55,7 @@ Un jeu 2D de type Mario développé avec Godot 4.4, où le joueur progresse en r
 └── Documentation/          # Documentation du projet
 ```
 
-## 🎮 Comment Jouer
+## Comment Jouer
 
 1. **Lancement** : Ouvrir le projet dans Godot 4.4+
 2. **Déplacement** : Le joueur se déplace automatiquement selon les réponses QCM
@@ -63,7 +63,7 @@ Un jeu 2D de type Mario développé avec Godot 4.4, où le joueur progresse en r
 4. **Collecter les bonus** : Les zones vertes font avancer
 5. **Objectif** : Atteindre la fin du niveau
 
-## 🛠️ Installation et Configuration
+## Installation et Configuration
 
 ### Prérequis
 - **Godot Engine** 4.4 ou supérieur
@@ -84,15 +84,15 @@ cd jeu-qcm-2d-godot
 2. Vérifier que la scène principale est configurée
 3. Lancer le jeu avec F5
 
-## 📊 Système de Questions
+## Système de Questions
 
 Le jeu contient **117 questions** réparties dans différentes catégories :
 
-- 🌍 **Géographie** : Capitales, pays, monuments
-- 🎨 **Art & Culture** : Peintres, œuvres, littérature
-- 🔬 **Sciences** : Éléments chimiques, découvertes, inventions
-- 📚 **Histoire** : Dates importantes, personnages historiques
-- 🌍 **Nature** : Animaux, géographie physique, environnement
+- **Géographie** : Capitales, pays, monuments
+- **Art & Culture** : Peintres, œuvres, littérature
+- **Sciences** : Éléments chimiques, découvertes, inventions
+- **Histoire** : Dates importantes, personnages historiques
+- **Nature** : Animaux, géographie physique, environnement
 
 ### Exemple de Question
 ```json
@@ -103,26 +103,7 @@ Le jeu contient **117 questions** réparties dans différentes catégories :
 }
 ```
 
-## 🎯 Système de Pièges et Bonus
-
-### Configuration Actuelle
-
-**Pièges** (zones rouges - font reculer) :
-- Piège 1 : Position (1825, 982) - Recul de 100 pixels
-- Piège 2 : Position (2270, 780) - Recul de 150 pixels  
-- Piège 3 : Position (1500, 551) - Recul de 120 pixels
-
-**Bonus** (zones vertes - font avancer) :
-- Bonus 1 : Position (479, 982) - Avance de 100 pixels
-- Bonus 2 : Position (671, 982) - Avance de 150 pixels
-- Bonus 3 : Position (2204, 780) - Avance de 120 pixels
-- Bonus 4 : Position (1889, 982) - Avance de 200 pixels
-
-### Logique de Direction
-- **Étages pairs** (0, 2, 4...) : Déplacement vers la droite
-- **Étages impairs** (1, 3, 5...) : Déplacement vers la gauche
-
-## 🔧 Développement
+## Développement
 
 ### Structure du Code
 
@@ -142,17 +123,17 @@ Le jeu contient **117 questions** réparties dans différentes catégories :
 - Marqueurs visuels pour debug
 - Contrôles de test (ESPACE, TAB, etc.)
 
-## 📈 Améliorations Futures
+## Améliorations Futures
 
-- [ ] **Multijoueur** : Support complet du mode multijoueur
-- [ ] **Niveaux additionnels** : Plus de niveaux avec différentes difficultés
-- [ ] **Système de score** : Points basés sur les bonnes réponses et bonus
-- [ ] **Effets sonores** : Audio pour les pièges, bonus et QCM
-- [ ] **Animations avancées** : Plus d'effets visuels
-- [ ] **Éditeur de niveaux** : Outil pour créer de nouveaux niveaux
-- [ ] **Base de données étendue** : Plus de questions dans différentes catégories
+-  **Multijoueur** : Support complet du mode multijoueur
+-  **Niveaux additionnels** : Plus de niveaux avec différentes difficultés
+-  **Système de score** : Points basés sur les bonnes réponses et bonus
+-  **Effets sonores** : Audio pour les pièges, bonus et QCM
+-  **Animations avancées** : Plus d'effets visuels
+-  **Éditeur de niveaux** : Outil pour créer de nouveaux niveaux
+-  **Base de données étendue** : Plus de questions dans différentes catégories
 
-## 🤝 Contribution
+## Contribution
 
 Les contributions sont les bienvenues ! Voici comment contribuer :
 
@@ -163,23 +144,23 @@ Les contributions sont les bienvenues ! Voici comment contribuer :
 5. **Créer** une Pull Request
 
 ### Types de Contributions
-- 🐛 **Bug fixes** : Correction de bugs
-- ✨ **Nouvelles fonctionnalités** : Ajout de gameplay
-- 📚 **Documentation** : Amélioration de la documentation
-- 🎨 **Assets** : Nouveaux sprites, sons, animations
-- 🧪 **Tests** : Amélioration des tests
+- **Bug fixes** : Correction de bugs
+- **Nouvelles fonctionnalités** : Ajout de gameplay
+- **Documentation** : Amélioration de la documentation
+- **Assets** : Nouveaux sprites, sons, animations
+- **Tests** : Amélioration des tests
 
-## 📄 Licence
+## Licence
 
 Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
-## 👨‍💻 Auteur
+## Auteur
 
-Développé avec ❤️ par **Elida Nielsen** pour UqarLife
+Développé par **Eli Daniel Senyo ** pour UqarLife
 
 [![GitHub](https://img.shields.io/badge/GitHub-eliDaniel007-blue?style=flat-square&logo=github)](https://github.com/eliDaniel007)
 
-## 🙏 Remerciements
+## Remerciements
 
 - **Godot Engine** pour le moteur de jeu
 - **Communauté Godot** pour les ressources et l'aide
@@ -187,5 +168,4 @@ Développé avec ❤️ par **Elida Nielsen** pour UqarLife
 
 ---
 
-**Amusez-vous bien et bon jeu ! 🎮**
 
