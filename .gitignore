@@ -58,3 +58,6 @@ user://
 
 # Crash logs
 crash.log
+
+# Local AI tool settings
+.claude/
