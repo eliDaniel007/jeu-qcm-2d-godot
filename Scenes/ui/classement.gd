@@ -8,78 +8,118 @@ func afficher(noms_ordonnes: Array) -> void:
 	# Nettoyage
 	for c in conteneur.get_children():
 		c.queue_free()
-	
+
+	# Fond: appliquer la couleur sombre du thème si un ColorRect "Fond" existe
+	var fond = get_node_or_null("Fond")
+	if fond and fond is ColorRect:
+		fond.color = UITheme.COULEUR_FOND
+		fond.color.a = 0.92
+
 	# Titre
 	var titre = Label.new()
 	titre.text = "🏆 Classement Final"
 	titre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	titre.add_theme_color_override("font_color", Color.WHITE)
-	titre.add_theme_font_size_override("font_size", 48)
+	titre.add_theme_color_override("font_color", UITheme.COULEUR_ACCENT)
+	titre.add_theme_font_size_override("font_size", 56)
 	conteneur.add_child(titre)
-	
+	UITheme.animer_entree(titre, 0.0, 0.5)
+
 	# Espace
 	var espace = Control.new()
 	espace.custom_minimum_size = Vector2(0, 30)
 	conteneur.add_child(espace)
-	
-	# Lignes classement
+
+	# Lignes classement, apparition échelonnée façon podium (1er arrive en dernier pour emphase)
+	var couleurs_medaille = [UITheme.OR, UITheme.ARGENT, UITheme.BRONZE]
 	for i in range(noms_ordonnes.size()):
-		var ligne = Label.new()
-		var emoji = ""
-		match i:
-			0: emoji = "🥇"  # Or
-			1: emoji = "🥈"  # Argent
-			2: emoji = "🥉"  # Bronze
-			_: emoji = "🎯"  # Autres
-		
-		ligne.text = "%s %d. %s" % [emoji, i+1, String(noms_ordonnes[i])]
-		ligne.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		ligne.add_theme_color_override("font_color", Color.WHITE)
-		ligne.add_theme_font_size_override("font_size", 28)
+		var ligne = _creer_ligne_classement(i, noms_ordonnes[i], couleurs_medaille)
 		conteneur.add_child(ligne)
-	
+		# Les suivants apparaissent d'abord, le podium (0,1,2) en dernier pour emphase
+		var delai = 0.3 + (noms_ordonnes.size() - 1 - i) * 0.2
+		UITheme.animer_entree(ligne, delai, 0.45)
+
 	# Espace
 	var espace2 = Control.new()
 	espace2.custom_minimum_size = Vector2(0, 40)
 	conteneur.add_child(espace2)
-	
+
 	# Boutons actions
 	var actions = HBoxContainer.new()
 	actions.alignment = BoxContainer.ALIGNMENT_CENTER
 	actions.add_theme_constant_override("separation", 20)
-	
-	# Bouton Rejouer - Redémarre complètement le jeu
+
 	var rejouer = Button.new()
 	rejouer.text = "🔄 Rejouer"
-	rejouer.custom_minimum_size = Vector2(180, 52)
-	rejouer.add_theme_font_size_override("font_size", 18)
+	rejouer.custom_minimum_size = Vector2(200, 56)
+	rejouer.add_theme_font_size_override("font_size", 20)
 	rejouer.pressed.connect(func():
 		print("🔄 Bouton REJOUER pressé !")
-		print("Fermeture du classement...")
 		queue_free()
-		print("Classement fermé, lancement de la nouvelle partie...")
 		_redemarrer_jeu_complet()
 	)
-	
-	# Bouton Quitter - Ferme complètement le jeu
+
 	var quitter = Button.new()
 	quitter.text = "❌ Quitter"
-	quitter.custom_minimum_size = Vector2(180, 52)
-	quitter.add_theme_font_size_override("font_size", 18)
+	quitter.custom_minimum_size = Vector2(200, 56)
+	quitter.add_theme_font_size_override("font_size", 20)
 	quitter.pressed.connect(func():
 		_quitter_jeu()
 	)
-	
+
 	actions.add_child(rejouer)
 	actions.add_child(quitter)
 	conteneur.add_child(actions)
+
+	UITheme.appliquer_bouton(rejouer, UITheme.COULEUR_SUCCES)
+	UITheme.appliquer_bouton(quitter, UITheme.COULEUR_DANGER)
+	UITheme.animer_entree(actions, 0.3 + noms_ordonnes.size() * 0.2 + 0.2, 0.4)
+
+func _creer_ligne_classement(rang: int, nom: String, couleurs_medaille: Array) -> PanelContainer:
+	var panel = PanelContainer.new()
+	var couleur_rang = couleurs_medaille[rang] if rang < couleurs_medaille.size() else UITheme.COULEUR_FOND_CLAIR
+	var sb = UITheme.style_panel(UITheme.COULEUR_FOND_CLAIR)
+	sb.border_color = couleur_rang
+	sb.border_width_left = 6
+	panel.add_theme_stylebox_override("panel", sb)
+
+	var hbox = HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 18)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	panel.add_child(hbox)
+
+	var emoji = ""
+	match rang:
+		0: emoji = "🥇"
+		1: emoji = "🥈"
+		2: emoji = "🥉"
+		_: emoji = "🎯"
+
+	var l_medaille = Label.new()
+	l_medaille.text = emoji
+	l_medaille.add_theme_font_size_override("font_size", 40)
+	hbox.add_child(l_medaille)
+
+	var l_rang = Label.new()
+	l_rang.text = "%d." % (rang + 1)
+	l_rang.add_theme_font_size_override("font_size", 32)
+	l_rang.add_theme_color_override("font_color", couleur_rang)
+	l_rang.custom_minimum_size = Vector2(50, 0)
+	hbox.add_child(l_rang)
+
+	var l_nom = Label.new()
+	l_nom.text = String(nom)
+	l_nom.add_theme_font_size_override("font_size", 32)
+	l_nom.add_theme_color_override("font_color", UITheme.COULEUR_TEXTE)
+	hbox.add_child(l_nom)
+
+	return panel
 
 func _retour_lobby() -> void:
 	var scene = get_tree().current_scene
 	if scene == null:
 		return
 	# Masquer QCM s'il est visible
-	var qcm = scene.get_node_or_null("QCM")
+	var qcm = scene.get_node_or_null("UILayer/QCM")
 	if qcm:
 		qcm.visible = false
 	# Réinitialiser path_manager
@@ -87,12 +127,12 @@ func _retour_lobby() -> void:
 	if pm and pm.has_method("reinitialiser_partie"):
 		pm.reinitialiser_partie()
 	# Masquer le bouton ARRÊTER
-	var bouton_arreter = scene.get_node_or_null("BoutonArreter")
+	var bouton_arreter = scene.get_node_or_null("UILayer/BoutonArreter")
 	if bouton_arreter and bouton_arreter.has_method("set_bouton_visible"):
 		bouton_arreter.set_bouton_visible(false)
 	
 	# Afficher le lobby
-	var lobby = scene.get_node_or_null("Lobby")
+	var lobby = scene.get_node_or_null("UILayer/Lobby")
 	if lobby:
 		lobby.visible = true
 
@@ -118,13 +158,13 @@ func _arreter_partie_et_retour_lobby():
 	# APPROCHE ULTRA-SÉCURISÉE - ÉVITER TOUTES LES ERREURS
 	
 	# 1. Masquer le QCM simplement
-	var qcm = scene.get_node_or_null("QCM")
+	var qcm = scene.get_node_or_null("UILayer/QCM")
 	if qcm:
 		qcm.visible = false
 		print("QCM masqué")
 	
 	# 2. Réinitialiser le MultiManager simplement
-	var multi = scene.get_node_or_null("QCM/MultiManager")
+	var multi = scene.get_node_or_null("UILayer/QCM/MultiManager")
 	if multi and multi.has_method("reinitialiser"):
 		multi.reinitialiser()
 		print("MultiManager réinitialisé")
@@ -199,13 +239,13 @@ func _arreter_partie_et_retour_lobby():
 		print("❌ Problème: %d personnages sont encore présents" % compteur_restants)
 	
 	# 5. Masquer le bouton ARRÊTER
-	var bouton_arreter = scene.get_node_or_null("BoutonArreter")
+	var bouton_arreter = scene.get_node_or_null("UILayer/BoutonArreter")
 	if bouton_arreter and bouton_arreter.has_method("set_bouton_visible"):
 		bouton_arreter.set_bouton_visible(false)
 		print("Bouton ARRÊTER masqué")
 	
 	# 6. Afficher le lobby
-	var lobby = scene.get_node_or_null("Lobby")
+	var lobby = scene.get_node_or_null("UILayer/Lobby")
 	if lobby:
 		# Vider les champs de noms
 		var champs_noms = lobby.get_node_or_null("Fond/VBox/Noms/HBox")

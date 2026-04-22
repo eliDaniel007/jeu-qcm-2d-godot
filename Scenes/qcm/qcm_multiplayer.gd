@@ -16,9 +16,14 @@ var classement: Array = []    # [ { "nom": String, "noeud": Node2D } ]
 var classements_arrivees: Array = []   # ordre d'arrivée effectif
 var partie_terminee_bool: bool = false
 
+# Indicateur flottant "▼" au-dessus du joueur actif (visuel multi-local).
+var indicateur_actif: Label = null
+var indicateur_tween: Tween = null
+
+
 func _ready():
 	path_manager = get_tree().current_scene.get_node("path_manager")
-	qcm_ui = get_tree().current_scene.get_node("QCM")
+	qcm_ui = get_tree().current_scene.get_node("UILayer/QCM")
 	if qcm_ui and qcm_ui.has_signal("qcm_termine"):
 		qcm_ui.connect("qcm_termine", Callable(self, "_on_qcm_termine"))
 	if qcm_ui and qcm_ui.has_signal("tour_termine"):
@@ -48,6 +53,8 @@ func configurer_joueurs(noms: Array, scenes_joueurs: Array) -> void:
 
 func reinitialiser() -> void:
 	# Réinitialise l'état pour une nouvelle partie
+	_masquer_indicateur()
+	_masquer_camera()
 	liste_joueurs.clear()
 	classement.clear()
 	classements_arrivees.clear()
@@ -60,6 +67,58 @@ func _annoncer_tour():
 		return
 	var actif = liste_joueurs[index_joueur_actif]
 	emit_signal("tour_change", actif["nom"], index_joueur_actif)
+	_mettre_a_jour_indicateur(actif["noeud"])
+	_suivre_joueur_camera(actif["noeud"])
+
+func _creer_indicateur() -> void:
+	if indicateur_actif and is_instance_valid(indicateur_actif):
+		return
+	indicateur_actif = Label.new()
+	indicateur_actif.text = "▼"
+	indicateur_actif.add_theme_font_size_override("font_size", 42)
+	indicateur_actif.add_theme_color_override("font_color", Color(1.00, 0.75, 0.25))
+	indicateur_actif.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	indicateur_actif.add_theme_constant_override("outline_size", 6)
+	indicateur_actif.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	indicateur_actif.z_index = 50
+	indicateur_actif.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	get_tree().current_scene.add_child(indicateur_actif)
+
+func _mettre_a_jour_indicateur(joueur: Node) -> void:
+	if partie_terminee_bool:
+		return
+	_creer_indicateur()
+	if not is_instance_valid(joueur) or not is_instance_valid(indicateur_actif):
+		return
+	# Suivre le joueur: reparent sous le joueur pour que la position soit relative
+	if indicateur_actif.get_parent() != joueur:
+		if indicateur_actif.get_parent():
+			indicateur_actif.get_parent().remove_child(indicateur_actif)
+		joueur.add_child(indicateur_actif)
+	indicateur_actif.position = Vector2(-18, -90)
+	indicateur_actif.visible = true
+	indicateur_actif.modulate.a = 1.0
+	# Animation de rebond continue
+	if indicateur_tween and indicateur_tween.is_valid():
+		indicateur_tween.kill()
+	indicateur_tween = indicateur_actif.create_tween().set_loops()
+	indicateur_tween.tween_property(indicateur_actif, "position:y", -78, 0.5) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	indicateur_tween.tween_property(indicateur_actif, "position:y", -90, 0.5) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func _masquer_indicateur() -> void:
+	if indicateur_tween and indicateur_tween.is_valid():
+		indicateur_tween.kill()
+	if indicateur_actif and is_instance_valid(indicateur_actif):
+		indicateur_actif.queue_free()
+		indicateur_actif = null
+
+func _suivre_joueur_camera(_joueur: Node) -> void:
+	pass
+
+func _masquer_camera() -> void:
+	pass
 
 func _preparer_qcm_pour_joueur_actif():
 	if not qcm_ui or partie_terminee_bool:
@@ -106,6 +165,8 @@ func _on_victoire(joueur_gagnant: Node):
 	var seuil = max(1, max_joueurs - 1)
 	if classements_arrivees.size() >= seuil:
 		partie_terminee_bool = true
+		_masquer_indicateur()
+		_masquer_camera()
 		# Masquer le QCM
 		if qcm_ui:
 			qcm_ui.visible = false
@@ -132,7 +193,11 @@ func _afficher_classement(noms_ordonnes: Array) -> void:
 	if scene == null:
 		return
 	var ui = scene.instantiate()
-	get_tree().current_scene.add_child(ui)
+	var ui_layer = get_tree().current_scene.get_node_or_null("UILayer")
+	if ui_layer:
+		ui_layer.add_child(ui)
+	else:
+		get_tree().current_scene.add_child(ui)
 	if ui.has_method("afficher"):
 		ui.afficher(noms_ordonnes)
 	# Optionnel: réinitialiser l'index de tour pour une prochaine partie

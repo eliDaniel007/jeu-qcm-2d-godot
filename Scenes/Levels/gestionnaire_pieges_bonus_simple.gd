@@ -31,23 +31,28 @@ var pieges = [
 ]
 
 # Configuration des bonus avec différents types d'effets
+# Logique inversée : plus de bonus au RDC (généreux), moins et moins puissants en montant (difficile)
 var bonus = [
-	# Rez-de-chaussée (y=982) - Mix d'effets basiques
-	{"x": 479, "y": 982, "nom": "Étoile Filante", "type": "course_rapide", "valeur": 250},
-	{"x": 671, "y": 982, "nom": "Téléporteur", "type": "teleportation", "valeur": 300},
-	{"x": 1889, "y": 982, "nom": "Boost Magique", "type": "avance", "valeur": 400},
+	# Rez-de-chaussée (y=982) - 6 bonus très puissants pour encourager (600-800px)
+	{"x": 479, "y": 982, "nom": "Étoile Filante", "type": "course_rapide", "valeur": 700},
+	{"x": 671, "y": 982, "nom": "Téléporteur", "type": "teleportation", "valeur": 750},
+	{"x": 1889, "y": 982, "nom": "Boost Magique", "type": "boost", "valeur": 800},
+	{"x": 1400, "y": 982, "nom": "Saut Élastique", "type": "saut", "valeur": 650},
+	{"x": 1000, "y": 982, "nom": "Multiplicateur", "type": "multiplicateur", "valeur": 600},
+	{"x": 2200, "y": 982, "nom": "Bouclier Céleste", "type": "bouclier", "valeur": 900},  # 2200+900=3100 > 2688 (porte) → Monte au 1er étage !
 	
-	# 1er étage (y=780) - Introduction du vol
-	{"x": 2204, "y": 780, "nom": "Accélérateur", "type": "course_rapide", "valeur": 280},
-	{"x": 1600, "y": 780, "nom": "Ailes d'Ange", "type": "vol", "valeur": 320},
+	# 1er étage (y=780) - 3 bonus moyens (400-500px)
+	{"x": 2204, "y": 780, "nom": "Accélérateur", "type": "course_rapide", "valeur": 450},
+	{"x": 1600, "y": 780, "nom": "Ailes d'Ange", "type": "vol", "valeur": 500},
+	{"x": 800, "y": 780, "nom": "Tornade Magique", "type": "tornade", "valeur": 400},
 	
-	# 2ème étage (y=551) - Effets plus puissants
+	# 2ème étage (y=551) - 3 bonus plus faibles (300-400px)
 	{"x": 1000, "y": 551, "nom": "Saut Quantique", "type": "vol", "valeur": 350},
-	{"x": 1800, "y": 551, "nom": "Éclair Divin", "type": "course_rapide", "valeur": 380},
+	{"x": 1800, "y": 551, "nom": "Éclair Divin", "type": "course_rapide", "valeur": 400},
+	{"x": 500, "y": 551, "nom": "Boost Suprême", "type": "boost", "valeur": 300},
 	
-	# 3ème étage (y=348) - Bonus puissants mixtes
-	{"x": 1500, "y": 348, "nom": "Vitesse Lumière", "type": "course_rapide", "valeur": 450},
-	{"x": 2200, "y": 348, "nom": "Portail Céleste", "type": "teleportation", "valeur": 500},
+	# 3ème étage (y=348) - 1 bonus faible (300px) - très difficile
+	{"x": 1500, "y": 348, "nom": "Vitesse Lumière", "type": "teleportation", "valeur": 300},
 	
 	# 4ème étage final (y=180) - Aucun bonus (étage difficile)
 ]
@@ -61,6 +66,9 @@ var path_manager: Node2D
 # Marqueurs visuels
 var marqueurs_pieges: Array = []
 var marqueurs_bonus: Array = []
+
+# Historique des positions pour détection de vraies boucles infinies
+var historique_positions_cascade: Array = []
 
 func _ready():
 	print("=== INITIALISATION GESTIONNAIRE PIÈGES/BONUS ===")
@@ -127,16 +135,11 @@ func _sur_deplacement_termine(joueur: Node):
 	var position_joueur = joueur.global_position
 	print("Vérification piège/bonus à la position: %s" % position_joueur)
 	
-	# Vérifier d'abord les pièges
-	var piege_detecte = verifier_piege(position_joueur)
-	if piege_detecte:
-		appliquer_piege(joueur, piege_detecte)
-		return
+	# Réinitialiser l'historique pour une nouvelle cascade
+	historique_positions_cascade.clear()
 	
-	# Ensuite vérifier les bonus
-	var bonus_detecte = verifier_bonus(position_joueur)
-	if bonus_detecte:
-		appliquer_bonus(joueur, bonus_detecte)
+	# Démarrer la cascade d'effets (SANS LIMITE - combos infinis possibles !)
+	_verifier_et_appliquer_effets_cascade(joueur, 0)
 
 func verifier_piege(position_joueur: Vector2) -> Dictionary:
 	"""Vérifier si le joueur est sur un piège"""
@@ -162,10 +165,88 @@ func verifier_bonus(position_joueur: Vector2) -> Dictionary:
 	
 	return {}
 
+const PROFONDEUR_CASCADE_MAX = 30
+
+func _verifier_et_appliquer_effets_cascade(joueur: Node, profondeur: int):
+	"""Vérifier et appliquer les effets en cascade - COMBOS INFINIS POSSIBLES !"""
+	if not joueur or not is_instance_valid(joueur):
+		return
+
+	# Sécurité dure: éviter toute cascade runaway même si la détection de boucle échoue
+	if profondeur > PROFONDEUR_CASCADE_MAX:
+		print("⚠️ Profondeur cascade max atteinte (%d), arrêt forcé" % profondeur)
+		historique_positions_cascade.clear()
+		_reinitialiser_sprite_joueur(joueur)
+		return
+
+	var position_joueur = joueur.global_position
+
+	# Détection intelligente de boucle infinie :
+	# Si on revient EXACTEMENT à la même position 3 fois de suite, c'est une vraie boucle
+	var position_arrondie = Vector2(round(position_joueur.x / 10) * 10, round(position_joueur.y / 10) * 10)
+	var compte_position = 0
+	for pos in historique_positions_cascade:
+		if pos.distance_to(position_arrondie) < 15:
+			compte_position += 1
+	
+	if compte_position >= 3:
+		print("⚠️ BOUCLE INFINIE détectée (même position visitée 3 fois), arrêt du combo")
+		print("💥 COMBO TERMINÉ après %d effets en cascade !" % profondeur)
+		historique_positions_cascade.clear()
+		return
+	
+	# Ajouter la position à l'historique (garder seulement les 10 dernières)
+	historique_positions_cascade.append(position_arrondie)
+	if historique_positions_cascade.size() > 10:
+		historique_positions_cascade.pop_front()
+	
+	if profondeur > 0:
+		print("🔄 CASCADE niveau %d - Vérification à la position: %s" % [profondeur, position_joueur])
+	
+	# Vérifier d'abord les pièges
+	var piege_detecte = verifier_piege(position_joueur)
+	if piege_detecte:
+		appliquer_piege(joueur, piege_detecte)
+		# Afficher l'indicateur de combo si profondeur > 1
+		if profondeur > 0:
+			_afficher_combo(joueur.global_position, profondeur + 1)
+		# Après l'animation du piège, vérifier à nouveau (cascade)
+		get_tree().create_timer(0.4).timeout.connect(func(): _verifier_et_appliquer_effets_cascade(joueur, profondeur + 1))
+		return
+	
+	# Ensuite vérifier les bonus
+	var bonus_detecte = verifier_bonus(position_joueur)
+	if bonus_detecte:
+		var delai = appliquer_bonus(joueur, bonus_detecte)
+		# Afficher l'indicateur de combo si profondeur > 1
+		if profondeur > 0:
+			_afficher_combo(joueur.global_position, profondeur + 1)
+		# Après l'animation du bonus, vérifier à nouveau (cascade)
+		get_tree().create_timer(delai).timeout.connect(func(): _verifier_et_appliquer_effets_cascade(joueur, profondeur + 1))
+		return
+	
+	# Si aucun effet détecté, fin de la cascade
+	if profondeur > 0:
+		print("✅ Fin de la cascade après %d effet(s) - COMBO INCROYABLE !" % profondeur)
+		historique_positions_cascade.clear()
+
+	# SÉCURITÉ : Vérifier si le joueur a dépassé la porte (saut par-dessus via combo)
+	# Cela évite qu'il reste coincé dans le vide après un gros combo
+	_verifier_depassement_porte(joueur)
+
+	# SÉCURITÉ finale: après tous les effets/cascades, garantir que le joueur
+	# est visible et avec sa couleur unique (anti-bug disparition/couleur).
+	# Délai pour laisser finir les tweens d'animation des effets.
+	get_tree().create_timer(2.0).timeout.connect(func():
+		if is_instance_valid(joueur):
+			_reinitialiser_sprite_joueur(joueur)
+	)
+
 func appliquer_piege(joueur: Node, piege: Dictionary):
 	"""Appliquer l'effet d'un piège : faire reculer le joueur"""
 	print("=== PIÈGE ACTIVÉ: %s ===" % piege.nom)
 	print("Le joueur recule de %d pixels" % piege.recul)
+	_son("piege")
 	
 	# Déterminer la direction de recul selon l'étage (comme le système de portes)
 	var etage_actuel = 0
@@ -181,6 +262,9 @@ func appliquer_piege(joueur: Node, piege: Dictionary):
 		# Étage impair : on se déplaçait vers la gauche, donc on recule vers la droite
 		nouvelle_position = joueur.global_position + Vector2(piege.recul, 0)
 	
+	# Affichage UX : montrer la perte
+	_afficher_notification_evenement(joueur.global_position, -piege.recul, piege.nom, false)
+	
 	# Déplacer le joueur instantanément
 	joueur.global_position = nouvelle_position
 	print("Joueur déplacé vers: %s" % nouvelle_position)
@@ -188,31 +272,66 @@ func appliquer_piege(joueur: Node, piege: Dictionary):
 	# Animation selon l'étage - plus spectaculaire en montant
 	_jouer_animation_piege(joueur, etage_actuel, piege.recul)
 
-func appliquer_bonus(joueur: Node, bonus_item: Dictionary):
-	"""Appliquer l'effet d'un bonus selon son type"""
+func appliquer_bonus(joueur: Node, bonus_item: Dictionary) -> float:
+	"""Appliquer l'effet d'un bonus selon son type - Retourne le délai d'animation"""
 	print("=== BONUS ACTIVÉ: %s (Type: %s) ===" % [bonus_item.nom, bonus_item.type])
+	_son("bonus")
 	
 	# Déterminer l'étage actuel
 	var etage_actuel = 0
 	if path_manager.has_method("get_etage_actuel"):
 		etage_actuel = path_manager.get_etage_actuel()
 	
+	# Déterminer le délai selon le type de bonus (durée de l'animation)
+	var delai_animation = 0.3
+	
+	# Affichage UX : montrer le gain
+	_afficher_notification_evenement(joueur.global_position, bonus_item.valeur, bonus_item.nom, true)
+	
 	# Appliquer l'effet selon le type de bonus
 	match bonus_item.type:
 		"avance":
 			_appliquer_effet_avance(joueur, bonus_item, etage_actuel)
+			delai_animation = 0.1  # Instantané
 		"course_rapide":
 			_appliquer_effet_course_rapide(joueur, bonus_item, etage_actuel)
+			# Délai variable selon le bonus
+			if "Étoile Filante" in bonus_item.nom:
+				delai_animation = 0.5
+			elif "Éclair Divin" in bonus_item.nom:
+				delai_animation = 0.6
+			else:
+				delai_animation = 0.8
 		"teleportation":
 			_appliquer_effet_teleportation(joueur, bonus_item, etage_actuel)
+			delai_animation = 0.6
 		"vol":
 			_appliquer_effet_vol(joueur, bonus_item, etage_actuel)
+			delai_animation = 1.5
+		"saut":
+			_appliquer_effet_saut(joueur, bonus_item, etage_actuel)
+			delai_animation = 1.1
+		"boost":
+			_appliquer_effet_boost(joueur, bonus_item, etage_actuel)
+			delai_animation = 0.6
+		"multiplicateur":
+			_appliquer_effet_multiplicateur(joueur, bonus_item, etage_actuel)
+			delai_animation = 1.1
+		"bouclier":
+			_appliquer_effet_bouclier(joueur, bonus_item, etage_actuel)
+			delai_animation = 0.8
+		"tornade":
+			_appliquer_effet_tornade(joueur, bonus_item, etage_actuel)
+			delai_animation = 1.1
 		_:
 			# Type par défaut : avance simple
 			_appliquer_effet_avance(joueur, bonus_item, etage_actuel)
+			delai_animation = 0.1
 	
 	# Animation selon le type et l'étage
-	_jouer_animation_bonus_par_type(joueur, bonus_item.type, etage_actuel, bonus_item.valeur)
+	_jouer_animation_bonus_par_type(joueur, bonus_item.type, etage_actuel, bonus_item.valeur, bonus_item.nom)
+	
+	return delai_animation
 
 # === FONCTIONS POUR LES DIFFÉRENTS TYPES D'EFFETS DE BONUS ===
 
@@ -243,17 +362,37 @@ func _appliquer_effet_course_rapide(joueur: Node, bonus_item: Dictionary, etage_
 	else:
 		nouvelle_position = position_depart - Vector2(bonus_item.valeur, 0)
 	
+	# Déterminer l'intensité selon le nom du bonus
+	var duree_course = 0.8  # Par défaut
+	var vitesse_sprite = 3.0  # Par défaut
+	
+	if "Étoile Filante" in bonus_item.nom:
+		# Plus plus rapide
+		duree_course = 0.4
+		vitesse_sprite = 5.0
+		print("⚡ Mode ULTRA RAPIDE activé !")
+	elif "Éclair Divin" in bonus_item.nom:
+		# Plus rapide
+		duree_course = 0.5
+		vitesse_sprite = 4.0
+		print("⚡ Mode PLUS RAPIDE activé !")
+	else:
+		# Rapide (Accélérateur)
+		duree_course = 0.7
+		vitesse_sprite = 3.5
+		print("⚡ Mode RAPIDE activé !")
+	
 	# Animation de course rapide progressive
 	var tween_course = create_tween()
-	tween_course.tween_property(joueur, "global_position", nouvelle_position, 0.8)
+	tween_course.tween_property(joueur, "global_position", nouvelle_position, duree_course)
 	
 	# Effet de vitesse avec sprite animé
 	if joueur.has_node("AnimatedSprite2D"):
 		var sprite = joueur.get_node("AnimatedSprite2D")
 		# Accélérer l'animation pendant la course
 		var vitesse_originale = sprite.speed_scale
-		sprite.speed_scale = 3.0  # 3x plus rapide
-		tween_course.tween_callback(func(): sprite.speed_scale = vitesse_originale).set_delay(0.8)
+		sprite.speed_scale = vitesse_sprite
+		tween_course.tween_callback(func(): sprite.speed_scale = vitesse_originale).set_delay(duree_course)
 	
 	print("Joueur court rapidement vers: %s" % nouvelle_position)
 
@@ -270,24 +409,32 @@ func _appliquer_effet_teleportation(joueur: Node, bonus_item: Dictionary, etage_
 		nouvelle_position = position_depart - Vector2(bonus_item.valeur, 0)
 	
 	# Effet de téléportation avec fade out/in
+	# IMPORTANT: on anime le sprite (pas le noeud joueur) pour ne pas affecter la couleur unique via modulate du parent.
+	var sprite_tp: AnimatedSprite2D = null
+	if joueur.has_node("AnimatedSprite2D"):
+		sprite_tp = joueur.get_node("AnimatedSprite2D")
 	var tween_teleport = create_tween()
 	tween_teleport.set_parallel(true)
-	
-	# Disparition rapide
-	tween_teleport.tween_property(joueur, "modulate", Color.TRANSPARENT, 0.15)
+
+	# Disparition rapide (via joueur.modulate.a uniquement pour préserver la couleur)
+	tween_teleport.tween_property(joueur, "modulate:a", 0.0, 0.15)
 	tween_teleport.tween_property(joueur, "scale", Vector2(0.1, 0.1), 0.15)
-	
-	# Téléportation instantanée au milieu
-	tween_teleport.tween_callback(func(): joueur.global_position = nouvelle_position).set_delay(0.15)
-	
-	# Réapparition spectaculaire
-	tween_teleport.tween_property(joueur, "modulate", Color.WHITE, 0.3).set_delay(0.15)
+
+	# Téléportation instantanée au milieu + son
+	tween_teleport.tween_callback(func():
+		joueur.global_position = nouvelle_position
+		if Engine.has_singleton("SoundManager") or get_tree().root.has_node("SoundManager"):
+			get_tree().root.get_node("SoundManager").jouer("teleport")
+	).set_delay(0.15)
+
+	# Réapparition spectaculaire (alpha seulement)
+	tween_teleport.tween_property(joueur, "modulate:a", 1.0, 0.3).set_delay(0.15)
 	tween_teleport.tween_property(joueur, "scale", Vector2(1.0, 1.0), 0.3).set_delay(0.15)
 	
 	# Callback de sécurité pour la téléportation
 	if joueur.has_node("AnimatedSprite2D"):
 		var sprite = joueur.get_node("AnimatedSprite2D")
-		tween_teleport.tween_callback(func(): _reinitialiser_sprite_joueur(sprite)).set_delay(0.5)
+		tween_teleport.tween_callback(func(): _reinitialiser_sprite_joueur(joueur)).set_delay(0.5)
 	
 	print("Joueur téléporté vers: %s" % nouvelle_position)
 
@@ -303,9 +450,23 @@ func _appliquer_effet_vol(joueur: Node, bonus_item: Dictionary, etage_actuel: in
 	else:
 		nouvelle_position = position_depart - Vector2(bonus_item.valeur, 0)
 	
+	# Déterminer la hauteur selon le nom du bonus
+	var hauteur_vol = 40  # Par défaut
+	
+	if "Saut Quantique" in bonus_item.nom:
+		# Plus haut
+		hauteur_vol = 80
+		print("🚀 Mode VOL PLUS HAUT activé !")
+	elif "Ailes d'Ange" in bonus_item.nom:
+		# Haut
+		hauteur_vol = 60
+		print("🕊️ Mode VOL HAUT activé !")
+	else:
+		# Hauteur standard
+		hauteur_vol = 40 + (etage_actuel * 15)
+	
 	# Animation de vol : montée, vol horizontal, descente
 	var tween_vol = create_tween()
-	var hauteur_vol = 40 + (etage_actuel * 15)  # Plus haut aux étages élevés
 	
 	# Phase 1: Montée
 	var position_vol = Vector2(position_depart.x, position_depart.y - hauteur_vol)
@@ -330,17 +491,284 @@ func _appliquer_effet_vol(joueur: Node, bonus_item: Dictionary, etage_actuel: in
 		tween_ailes.tween_property(sprite, "rotation", 0, 0.2)
 		
 		# Callback de sécurité pour remettre toutes les propriétés à zéro
-		tween_ailes.tween_callback(func(): _reinitialiser_sprite_joueur(sprite)).set_delay(1.6)
+		tween_ailes.tween_callback(func(): _reinitialiser_sprite_joueur(joueur)).set_delay(1.6)
 	
 	print("Joueur vole vers: %s" % nouvelle_position)
 
-func _reinitialiser_sprite_joueur(sprite: Node):
-	"""Fonction de sécurité pour remettre le sprite du joueur dans son état normal"""
-	if sprite and is_instance_valid(sprite):
-		sprite.rotation = 0.0
-		sprite.scale = Vector2(1.0, 1.0)
-		sprite.modulate = Color.WHITE
-		print("🔧 Sprite du joueur réinitialisé par sécurité")
+func _appliquer_effet_saut(joueur: Node, bonus_item: Dictionary, etage_actuel: int):
+	"""Effet saut : le joueur fait un saut spectaculaire avec rebond"""
+	print("🦘 Effet SAUT de %d pixels" % bonus_item.valeur)
+	
+	var position_depart = joueur.global_position
+	var nouvelle_position: Vector2
+	
+	if etage_actuel % 2 == 0:
+		nouvelle_position = position_depart + Vector2(bonus_item.valeur, 0)
+	else:
+		nouvelle_position = position_depart - Vector2(bonus_item.valeur, 0)
+	
+	# Animation de saut avec rebond : montée, atterrissage, petit rebond
+	var tween_saut = create_tween()
+	var hauteur_saut = 60 + (etage_actuel * 10)
+	
+	# Phase 1: Montée du saut
+	var position_saut = Vector2(position_depart.x, position_depart.y - hauteur_saut)
+	tween_saut.tween_property(joueur, "global_position", position_saut, 0.3)
+	
+	# Phase 2: Atterrissage à la nouvelle position
+	var position_atterrissage = Vector2(nouvelle_position.x, nouvelle_position.y)
+	tween_saut.tween_property(joueur, "global_position", position_atterrissage, 0.4)
+	
+	# Phase 3: Petit rebond
+	var position_rebond = Vector2(nouvelle_position.x, nouvelle_position.y - hauteur_saut * 0.3)
+	tween_saut.tween_property(joueur, "global_position", position_rebond, 0.15)
+	tween_saut.tween_property(joueur, "global_position", nouvelle_position, 0.15)
+	
+	# Effet visuel de rotation pendant le saut
+	if joueur.has_node("AnimatedSprite2D"):
+		var sprite = joueur.get_node("AnimatedSprite2D")
+		var tween_rotation = create_tween()
+		tween_rotation.tween_property(sprite, "rotation", PI * 1.5, 0.7)
+		tween_rotation.tween_property(sprite, "rotation", 0, 0.3).set_delay(0.7)
+		tween_rotation.tween_callback(func(): _reinitialiser_sprite_joueur(joueur)).set_delay(1.0)
+	
+	print("Joueur saute vers: %s" % nouvelle_position)
+
+func _appliquer_effet_boost(joueur: Node, bonus_item: Dictionary, etage_actuel: int):
+	"""Effet boost : propulsion rapide avec effet de traînée"""
+	print("🚀 Effet BOOST de %d pixels" % bonus_item.valeur)
+	
+	var position_depart = joueur.global_position
+	var nouvelle_position: Vector2
+	
+	if etage_actuel % 2 == 0:
+		nouvelle_position = position_depart + Vector2(bonus_item.valeur, 0)
+	else:
+		nouvelle_position = position_depart - Vector2(bonus_item.valeur, 0)
+	
+	# Animation de boost très rapide avec effet de traînée
+	var tween_boost = create_tween()
+	tween_boost.tween_property(joueur, "global_position", nouvelle_position, 0.5)
+	
+	# Effet visuel de propulsion
+	if joueur.has_node("AnimatedSprite2D"):
+		var sprite = joueur.get_node("AnimatedSprite2D")
+		# Étirement horizontal pour simuler la vitesse
+		var tween_visuel = create_tween()
+		tween_visuel.set_parallel(true)
+		tween_visuel.tween_property(sprite, "scale", Vector2(1.8, 0.6), 0.25)
+		tween_visuel.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.25).set_delay(0.25)
+		
+		# Flash orange/rouge pour l'effet de propulsion
+		var couleurs_boost = [Color(0.9, 0.6, 0.3), Color(0.9, 0.4, 0.2), Color(0.8, 0.3, 0.1)]
+		for i in range(couleurs_boost.size()):
+			tween_visuel.tween_property(sprite, "modulate", couleurs_boost[i], 0.1).set_delay(i * 0.1)
+		tween_visuel.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.2).set_delay(0.3)
+		tween_visuel.tween_callback(func(): _reinitialiser_sprite_joueur(joueur)).set_delay(0.5)
+	
+	print("Joueur boosté vers: %s" % nouvelle_position)
+
+func _appliquer_effet_multiplicateur(joueur: Node, bonus_item: Dictionary, etage_actuel: int):
+	"""Effet multiplicateur : avance double avec effet visuel spécial"""
+	print("✨ Effet MULTIPLICATEUR de %d pixels (x2 = %d)" % [bonus_item.valeur, bonus_item.valeur * 2])
+	
+	var position_depart = joueur.global_position
+	var valeur_double = bonus_item.valeur * 2
+	var nouvelle_position: Vector2
+	
+	if etage_actuel % 2 == 0:
+		nouvelle_position = position_depart + Vector2(valeur_double, 0)
+	else:
+		nouvelle_position = position_depart - Vector2(valeur_double, 0)
+	
+	# Animation de multiplicateur : avance progressive avec effet de multiplication
+	var tween_mult = create_tween()
+	tween_mult.tween_property(joueur, "global_position", nouvelle_position, 1.0)
+	
+	# Effet visuel spécial de multiplication
+	if joueur.has_node("AnimatedSprite2D"):
+		var sprite = joueur.get_node("AnimatedSprite2D")
+		var tween_visuel = create_tween()
+		tween_visuel.set_parallel(true)
+		
+		# Pulsation avec effet de multiplication
+		for i in range(3):
+			tween_visuel.tween_property(sprite, "scale", Vector2(1.5, 1.5), 0.15).set_delay(i * 0.2)
+			tween_visuel.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.15).set_delay(i * 0.2 + 0.15)
+		
+		# Couleurs dorées pour l'effet de multiplication
+		var couleurs_mult = [Color(0.9, 0.8, 0.3), Color(0.9, 0.9, 0.5), Color(0.8, 0.7, 0.4)]
+		for i in range(couleurs_mult.size()):
+			tween_visuel.tween_property(sprite, "modulate", couleurs_mult[i], 0.2).set_delay(i * 0.2)
+		tween_visuel.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.3).set_delay(0.6)
+		tween_visuel.tween_callback(func(): _reinitialiser_sprite_joueur(joueur)).set_delay(1.0)
+	
+	print("Joueur multiplié vers: %s" % nouvelle_position)
+
+func _appliquer_effet_bouclier(joueur: Node, bonus_item: Dictionary, etage_actuel: int):
+	"""Effet bouclier : avance protégée avec effet de bouclier autour du joueur"""
+	print("🛡️ Effet BOUCLIER de %d pixels" % bonus_item.valeur)
+	
+	var position_depart = joueur.global_position
+	var nouvelle_position: Vector2
+	
+	if etage_actuel % 2 == 0:
+		nouvelle_position = position_depart + Vector2(bonus_item.valeur, 0)
+	else:
+		nouvelle_position = position_depart - Vector2(bonus_item.valeur, 0)
+	
+	# Animation de bouclier : avance avec effet protecteur
+	var tween_bouclier = create_tween()
+	tween_bouclier.tween_property(joueur, "global_position", nouvelle_position, 0.7)
+	
+	# Effet visuel de bouclier
+	if joueur.has_node("AnimatedSprite2D"):
+		var sprite = joueur.get_node("AnimatedSprite2D")
+		var tween_visuel = create_tween()
+		tween_visuel.set_parallel(true)
+		
+		# Effet de bouclier : pulsation bleue/cyan
+		var couleurs_bouclier = [Color(0.4, 0.7, 0.9), Color(0.5, 0.8, 0.9), Color(0.6, 0.9, 0.9)]
+		for i in range(4):
+			for couleur in couleurs_bouclier:
+				tween_visuel.tween_property(sprite, "modulate", couleur, 0.1).set_delay(i * 0.3 + couleurs_bouclier.find(couleur) * 0.1)
+		
+		# Légère pulsation pour simuler le bouclier
+		for i in range(3):
+			tween_visuel.tween_property(sprite, "scale", Vector2(1.2, 1.2), 0.2).set_delay(i * 0.2)
+			tween_visuel.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.2).set_delay(i * 0.2 + 0.2)
+		
+		tween_visuel.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.2).set_delay(0.7)
+		tween_visuel.tween_callback(func(): _reinitialiser_sprite_joueur(joueur)).set_delay(0.7)
+	
+	print("Joueur protégé vers: %s" % nouvelle_position)
+
+func _appliquer_effet_tornade(joueur: Node, bonus_item: Dictionary, etage_actuel: int):
+	"""Effet tornade : le joueur tourne en spirale pendant l'avance"""
+	print("🌪️ Effet TORNADE de %d pixels" % bonus_item.valeur)
+	
+	var position_depart = joueur.global_position
+	var nouvelle_position: Vector2
+	
+	if etage_actuel % 2 == 0:
+		nouvelle_position = position_depart + Vector2(bonus_item.valeur, 0)
+	else:
+		nouvelle_position = position_depart - Vector2(bonus_item.valeur, 0)
+	
+	# Animation de tornade : rotation en spirale pendant l'avance avec oscillation verticale
+	var tween_tornade = create_tween()
+	var position_initiale = joueur.global_position
+	
+	# Créer un mouvement en spirale avec oscillation verticale
+	for i in range(9):
+		var offset_y = sin(i * 0.7) * 20
+		var pos_spirale = Vector2(
+			lerp(position_depart.x, nouvelle_position.x, i / 9.0),
+			position_depart.y + offset_y
+		)
+		tween_tornade.tween_property(joueur, "global_position", pos_spirale, 0.1)
+	
+	# S'assurer qu'on arrive exactement à la nouvelle position
+	tween_tornade.tween_property(joueur, "global_position", nouvelle_position, 0.1)
+	
+	# Effet visuel de tornade : rotation multiple
+	if joueur.has_node("AnimatedSprite2D"):
+		var sprite = joueur.get_node("AnimatedSprite2D")
+		var tween_rotation = create_tween()
+		
+		# Rotation multiple pour simuler la tornade
+		var rotations = 3 + etage_actuel
+		tween_rotation.tween_property(sprite, "rotation", rotations * 2 * PI, 1.0)
+		tween_rotation.tween_property(sprite, "rotation", 0, 0.2).set_delay(1.0)
+		
+		# Couleurs tourbillonnantes
+		var tween_couleurs = create_tween()
+		var couleurs_tornade = [Color(0.7, 0.8, 0.9), Color(0.8, 0.7, 0.9), Color(0.9, 0.8, 0.7)]
+		for i in range(couleurs_tornade.size()):
+			tween_couleurs.tween_property(sprite, "modulate", couleurs_tornade[i], 0.3).set_delay(i * 0.3)
+		tween_couleurs.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.2).set_delay(1.0)
+		tween_couleurs.tween_callback(func(): _reinitialiser_sprite_joueur(joueur)).set_delay(1.2)
+	
+	print("Joueur en tornade vers: %s" % nouvelle_position)
+
+func _son(nom: String) -> void:
+	# Wrapper sûr pour jouer un son via l'autoload SoundManager.
+	var root = get_tree().root
+	if root.has_node("SoundManager"):
+		root.get_node("SoundManager").jouer(nom)
+
+func _couleur_joueur(joueur: Node) -> Color:
+	# Retourne la couleur unique du joueur pour préserver son identité visuelle
+	# (utilisée comme cible finale des tweens de modulate sur le sprite).
+	if joueur and is_instance_valid(joueur) and "couleur_personnage" in joueur:
+		return joueur.couleur_personnage
+	return Color.WHITE
+
+func _reinitialiser_sprite_joueur(joueur: Node):
+	"""Remet le joueur dans son état normal après un effet.
+	Restaure visibilité, échelle, rotation, speed_scale ET la couleur unique du joueur.
+	Ne PAS remettre modulate à Color.WHITE seul: ça efface la couleur hash du personnage."""
+	if not joueur or not is_instance_valid(joueur):
+		return
+	if joueur.has_method("restaurer_apparence"):
+		joueur.restaurer_apparence()
+	else:
+		# Fallback si on reçoit directement un sprite (ancien code)
+		if joueur is CanvasItem:
+			joueur.rotation = 0.0
+			joueur.scale = Vector2.ONE
+			joueur.modulate = Color.WHITE
+			joueur.visible = true
+			if joueur is AnimatedSprite2D:
+				joueur.speed_scale = 1.0
+	print("🔧 Apparence du joueur restaurée")
+
+func _verifier_depassement_porte(joueur: Node):
+	"""Vérifier si le joueur a dépassé la porte (saut par-dessus via combo) et le téléporter si nécessaire"""
+	if not joueur or not is_instance_valid(joueur):
+		return
+	
+	if not path_manager:
+		return
+	
+	var etage_actuel = 0
+	if path_manager.has_method("get_etage_actuel"):
+		etage_actuel = path_manager.get_etage_actuel()
+	
+	# Obtenir la configuration de la porte pour l'étage actuel
+	var configuration_etages = {
+		0: {"porte_x": 2688, "direction": 1},   # Rez-de-chaussée → porte à droite
+		1: {"porte_x": -48, "direction": -1},   # 1er étage → porte à gauche
+		2: {"porte_x": 2688, "direction": 1},   # 2ème étage → porte à droite
+		3: {"porte_x": 4224, "direction": 1},   # 3ème étage → porte à droite
+	}
+	
+	if not configuration_etages.has(etage_actuel):
+		return
+	
+	var config = configuration_etages[etage_actuel]
+	var position_porte = config["porte_x"]
+	var direction = config["direction"]  # 1 = vers la droite, -1 = vers la gauche
+	
+	var position_joueur = joueur.global_position.x
+	
+	# Vérifier si le joueur a dépassé la porte dans la bonne direction
+	var a_depasse = false
+	if direction == 1 and position_joueur > position_porte:
+		# Étage pair : le joueur va vers la droite et a dépassé la porte
+		a_depasse = true
+	elif direction == -1 and position_joueur < position_porte:
+		# Étage impair : le joueur va vers la gauche et a dépassé la porte
+		a_depasse = true
+	
+	if a_depasse:
+		print("🚨 DÉPASSEMENT DE PORTE DÉTECTÉ ! Position joueur: %f, Porte: %f, Étage: %d" % [position_joueur, position_porte, etage_actuel])
+		print("   Le joueur a sauté par-dessus la porte grâce au combo !")
+		
+		# Forcer la téléportation vers l'étage supérieur
+		if path_manager.has_method("teleporter_vers_etage_superieur"):
+			path_manager.teleporter_vers_etage_superieur()
+			print("   ✅ Joueur téléporté vers l'étage supérieur")
 
 func _jouer_animation_piege(joueur: Node, etage: int = 0, recul: int = 100):
 	"""Animation spectaculaire pour signaler qu'un piège a été activé"""
@@ -389,7 +817,7 @@ func _jouer_animation_piege(joueur: Node, etage: int = 0, recul: int = 100):
 			tween.tween_property(sprite, "modulate", couleur_set[0], 0.08)
 			tween.tween_property(sprite, "modulate", couleur_set[1], 0.08).set_delay(0.08 * (i*2+1))
 		
-		tween.tween_property(sprite, "modulate", Color.WHITE, 0.4).set_delay(0.6)
+		tween.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.4).set_delay(0.6)
 		
 		# Grossissement plus important aux étages élevés
 		var scale_max = 1.5 + (etage * 0.3)
@@ -400,7 +828,7 @@ func _jouer_animation_piege(joueur: Node, etage: int = 0, recul: int = 100):
 	if etage >= 2:
 		_creer_effet_particules_piege_avance(position_initiale, etage)
 
-func _jouer_animation_bonus_par_type(joueur: Node, type: String, etage: int = 0, valeur: int = 100):
+func _jouer_animation_bonus_par_type(joueur: Node, type: String, etage: int = 0, valeur: int = 100, nom_bonus: String = ""):
 	"""Animation spécifique selon le type de bonus"""
 	if not joueur:
 		return
@@ -411,11 +839,21 @@ func _jouer_animation_bonus_par_type(joueur: Node, type: String, etage: int = 0,
 		"avance":
 			_animation_bonus_avance(joueur, etage, valeur)
 		"course_rapide":
-			_animation_bonus_course_rapide(joueur, etage, valeur)
+			_animation_bonus_course_rapide(joueur, etage, valeur, nom_bonus)
 		"teleportation":
 			_animation_bonus_teleportation(joueur, etage, valeur)
 		"vol":
-			_animation_bonus_vol(joueur, etage, valeur)
+			_animation_bonus_vol(joueur, etage, valeur, nom_bonus)
+		"saut":
+			_animation_bonus_saut(joueur, etage, valeur)
+		"boost":
+			_animation_bonus_boost(joueur, etage, valeur)
+		"multiplicateur":
+			_animation_bonus_multiplicateur(joueur, etage, valeur)
+		"bouclier":
+			_animation_bonus_bouclier(joueur, etage, valeur)
+		"tornade":
+			_animation_bonus_tornade(joueur, etage, valeur)
 		_:
 			_animation_bonus_avance(joueur, etage, valeur)
 
@@ -432,15 +870,39 @@ func _animation_bonus_avance(joueur: Node, etage: int, valeur: int):
 		# Flash vert doux
 		var couleur_verte = Color(0.6, 0.9, 0.6, 0.9)
 		tween.tween_property(sprite, "modulate", couleur_verte, 0.2)
-		tween.tween_property(sprite, "modulate", Color.WHITE, 0.3).set_delay(0.2)
+		tween.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.3).set_delay(0.2)
 		
 		# Légère pulsation
 		tween.tween_property(sprite, "scale", Vector2(1.3, 1.3), 0.2)
 		tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.3).set_delay(0.2)
 
-func _animation_bonus_course_rapide(joueur: Node, etage: int, valeur: int):
-	"""Animation pour bonus de course rapide"""
+func _animation_bonus_course_rapide(joueur: Node, etage: int, valeur: int, nom_bonus: String = ""):
+	"""Animation pour bonus de course rapide avec intensité variable"""
 	print("🏃 ANIMATION COURSE RAPIDE !")
+	
+	# Déterminer l'intensité selon le nom
+	var intensite_etirement = 1.5  # Par défaut
+	var duree_animation = 0.3  # Par défaut
+	var nombre_particules = 8 + etage * 3  # Par défaut
+	
+	if "Étoile Filante" in nom_bonus:
+		# Plus plus rapide - effet très intense
+		intensite_etirement = 2.2
+		duree_animation = 0.2
+		nombre_particules = 15 + etage * 5
+		print("⚡⚡ Mode ULTRA RAPIDE - Animation maximale !")
+	elif "Éclair Divin" in nom_bonus:
+		# Plus rapide - effet intense
+		intensite_etirement = 1.8
+		duree_animation = 0.25
+		nombre_particules = 12 + etage * 4
+		print("⚡ Mode PLUS RAPIDE - Animation intense !")
+	else:
+		# Rapide - effet standard
+		intensite_etirement = 1.5
+		duree_animation = 0.3
+		nombre_particules = 8 + etage * 3
+		print("⚡ Mode RAPIDE - Animation standard !")
 	
 	if joueur.has_node("AnimatedSprite2D"):
 		var sprite = joueur.get_node("AnimatedSprite2D")
@@ -451,14 +913,14 @@ func _animation_bonus_course_rapide(joueur: Node, etage: int, valeur: int):
 		var couleurs_vitesse = [Color(0.9, 0.8, 0.3), Color(0.8, 0.9, 0.4), Color(0.7, 0.8, 0.9)]  # Jaune, vert, bleu doux
 		for i in range(couleurs_vitesse.size()):
 			tween.tween_property(sprite, "modulate", couleurs_vitesse[i], 0.15).set_delay(i * 0.15)
-		tween.tween_property(sprite, "modulate", Color.WHITE, 0.2).set_delay(0.45)
+		tween.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.2).set_delay(0.45)
 		
-		# Étirement horizontal pour simuler la vitesse
-		tween.tween_property(sprite, "scale", Vector2(1.5, 0.8), 0.3)
-		tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.4).set_delay(0.3)
+		# Étirement horizontal pour simuler la vitesse (intensité variable)
+		tween.tween_property(sprite, "scale", Vector2(intensite_etirement, 0.8), duree_animation)
+		tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.4).set_delay(duree_animation)
 		
-		# Particules de vitesse
-		_creer_particules_vitesse(joueur.global_position, etage)
+		# Particules de vitesse (nombre variable)
+		_creer_particules_vitesse_intensite(joueur.global_position, etage, nombre_particules)
 
 func _animation_bonus_teleportation(joueur: Node, etage: int, valeur: int):
 	"""Animation pour bonus de téléportation"""
@@ -478,14 +940,34 @@ func _animation_bonus_teleportation(joueur: Node, etage: int, valeur: int):
 		# Effet de scintillement
 		for i in range(5):
 			tween.tween_property(sprite, "modulate", Color.TRANSPARENT, 0.03).set_delay(i * 0.1)
-			tween.tween_property(sprite, "modulate", Color.WHITE, 0.03).set_delay(i * 0.1 + 0.03)
+			tween.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.03).set_delay(i * 0.1 + 0.03)
 		
 		# Particules de téléportation
 		_creer_particules_teleportation(joueur.global_position, etage)
 
-func _animation_bonus_vol(joueur: Node, etage: int, valeur: int):
-	"""Animation pour bonus de vol"""
+func _animation_bonus_vol(joueur: Node, etage: int, valeur: int, nom_bonus: String = ""):
+	"""Animation pour bonus de vol avec hauteur variable"""
 	print("🕊️ ANIMATION VOL !")
+	
+	# Déterminer l'intensité selon le nom
+	var nombre_oscillations = 6  # Par défaut
+	var nombre_particules = 12 + etage * 4  # Par défaut
+	
+	if "Saut Quantique" in nom_bonus:
+		# Plus haut - effet très intense
+		nombre_oscillations = 10
+		nombre_particules = 20 + etage * 6
+		print("🚀 Mode VOL PLUS HAUT - Animation maximale !")
+	elif "Ailes d'Ange" in nom_bonus:
+		# Haut - effet intense
+		nombre_oscillations = 8
+		nombre_particules = 16 + etage * 5
+		print("🕊️ Mode VOL HAUT - Animation intense !")
+	else:
+		# Standard
+		nombre_oscillations = 6
+		nombre_particules = 12 + etage * 4
+		print("🕊️ Mode VOL STANDARD - Animation normale !")
 	
 	if joueur.has_node("AnimatedSprite2D"):
 		var sprite = joueur.get_node("AnimatedSprite2D")
@@ -496,23 +978,120 @@ func _animation_bonus_vol(joueur: Node, etage: int, valeur: int):
 		var couleurs_vol = [Color(0.8, 0.9, 0.9), Color(0.9, 0.9, 0.8), Color(0.9, 0.8, 0.9)]  # Bleu ciel, jaune doux, rose doux
 		for i in range(couleurs_vol.size()):
 			tween.tween_property(sprite, "modulate", couleurs_vol[i], 0.3).set_delay(i * 0.3)
-		tween.tween_property(sprite, "modulate", Color.WHITE, 0.3).set_delay(0.9)
+		tween.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.3).set_delay(0.9)
 		
-		# Effet de lévitation avec oscillation contrôlée
-		for i in range(6):
+		# Effet de lévitation avec oscillation contrôlée (nombre variable)
+		for i in range(nombre_oscillations):
 			tween.tween_property(sprite, "scale", Vector2(1.2, 0.9), 0.2).set_delay(i * 0.2)
 			tween.tween_property(sprite, "scale", Vector2(0.9, 1.2), 0.2).set_delay(i * 0.2 + 0.1)
 		# S'assurer que le scale revient exactement à la normale
-		tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.3).set_delay(1.2)
+		var duree_totale = nombre_oscillations * 0.2 + 0.1
+		tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.3).set_delay(duree_totale)
 		
-		# Particules de plumes
-		_creer_particules_vol(joueur.global_position, etage)
+		# Particules de plumes (nombre variable)
+		_creer_particules_vol_intensite(joueur.global_position, etage, nombre_particules)
+
+func _animation_bonus_saut(joueur: Node, etage: int, valeur: int):
+	"""Animation pour bonus de saut"""
+	print("🦘 ANIMATION SAUT !")
+	
+	if joueur.has_node("AnimatedSprite2D"):
+		var sprite = joueur.get_node("AnimatedSprite2D")
+		var tween = create_tween()
+		tween.set_parallel(true)
+		
+		# Couleurs dynamiques pour le saut
+		var couleurs_saut = [Color(0.8, 0.9, 0.6), Color(0.9, 0.8, 0.5), Color(0.7, 0.9, 0.7)]  # Vert clair, jaune doux
+		for i in range(couleurs_saut.size()):
+			tween.tween_property(sprite, "modulate", couleurs_saut[i], 0.2).set_delay(i * 0.2)
+		tween.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.3).set_delay(0.6)
+		
+		# Particules de saut
+		_creer_particules_saut(joueur.global_position, etage)
+
+func _animation_bonus_boost(joueur: Node, etage: int, valeur: int):
+	"""Animation pour bonus de boost"""
+	print("🚀 ANIMATION BOOST !")
+	
+	if joueur.has_node("AnimatedSprite2D"):
+		var sprite = joueur.get_node("AnimatedSprite2D")
+		var tween = create_tween()
+		tween.set_parallel(true)
+		
+		# Flash orange/rouge intense
+		var couleurs_boost = [Color(0.9, 0.5, 0.2), Color(0.9, 0.3, 0.1), Color(0.8, 0.2, 0.1)]
+		for i in range(couleurs_boost.size()):
+			tween.tween_property(sprite, "modulate", couleurs_boost[i], 0.1).set_delay(i * 0.1)
+		tween.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.2).set_delay(0.3)
+		
+		# Particules de boost
+		_creer_particules_boost(joueur.global_position, etage)
+
+func _animation_bonus_multiplicateur(joueur: Node, etage: int, valeur: int):
+	"""Animation pour bonus multiplicateur"""
+	print("✨ ANIMATION MULTIPLICATEUR !")
+	
+	if joueur.has_node("AnimatedSprite2D"):
+		var sprite = joueur.get_node("AnimatedSprite2D")
+		var tween = create_tween()
+		tween.set_parallel(true)
+		
+		# Couleurs dorées pour l'effet de multiplication
+		var couleurs_mult = [Color(0.9, 0.8, 0.3), Color(0.9, 0.9, 0.5), Color(0.8, 0.7, 0.4)]
+		for i in range(2):  # Répéter pour l'effet de multiplication
+			for couleur in couleurs_mult:
+				tween.tween_property(sprite, "modulate", couleur, 0.15).set_delay(i * 0.45 + couleurs_mult.find(couleur) * 0.15)
+		tween.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.3).set_delay(0.9)
+		
+		# Particules dorées
+		_creer_particules_multiplicateur(joueur.global_position, etage)
+
+func _animation_bonus_bouclier(joueur: Node, etage: int, valeur: int):
+	"""Animation pour bonus bouclier"""
+	print("🛡️ ANIMATION BOUCLIER !")
+	
+	if joueur.has_node("AnimatedSprite2D"):
+		var sprite = joueur.get_node("AnimatedSprite2D")
+		var tween = create_tween()
+		tween.set_parallel(true)
+		
+		# Couleurs bleues/cyan pour l'effet de bouclier
+		var couleurs_bouclier = [Color(0.4, 0.7, 0.9), Color(0.5, 0.8, 0.9), Color(0.6, 0.9, 0.9)]
+		for i in range(3):
+			for couleur in couleurs_bouclier:
+				tween.tween_property(sprite, "modulate", couleur, 0.1).set_delay(i * 0.3 + couleurs_bouclier.find(couleur) * 0.1)
+		tween.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.2).set_delay(0.9)
+		
+		# Particules de bouclier
+		_creer_particules_bouclier(joueur.global_position, etage)
+
+func _animation_bonus_tornade(joueur: Node, etage: int, valeur: int):
+	"""Animation pour bonus tornade"""
+	print("🌪️ ANIMATION TORNADE !")
+	
+	if joueur.has_node("AnimatedSprite2D"):
+		var sprite = joueur.get_node("AnimatedSprite2D")
+		var tween = create_tween()
+		tween.set_parallel(true)
+		
+		# Couleurs tourbillonnantes
+		var couleurs_tornade = [Color(0.7, 0.8, 0.9), Color(0.8, 0.7, 0.9), Color(0.9, 0.8, 0.7)]
+		for i in range(couleurs_tornade.size()):
+			tween.tween_property(sprite, "modulate", couleurs_tornade[i], 0.3).set_delay(i * 0.3)
+		tween.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.2).set_delay(0.9)
+		
+		# Particules de tornade
+		_creer_particules_tornade(joueur.global_position, etage)
 
 # === FONCTIONS POUR LES PARTICULES SPÉCIFIQUES ===
 
 func _creer_particules_vitesse(position: Vector2, etage: int):
 	"""Créer des particules de vitesse pour la course rapide"""
-	for i in range(8 + etage * 3):
+	_creer_particules_vitesse_intensite(position, etage, 8 + etage * 3)
+
+func _creer_particules_vitesse_intensite(position: Vector2, etage: int, nombre: int):
+	"""Créer des particules de vitesse avec nombre variable"""
+	for i in range(nombre):
 		var particule = ColorRect.new()
 		particule.size = Vector2(12, 4)  # Forme allongée pour simuler la vitesse
 		particule.color = [Color(0.9, 0.8, 0.3), Color(0.8, 0.9, 0.4)][i % 2]  # Jaune/vert doux
@@ -546,7 +1125,11 @@ func _creer_particules_teleportation(position: Vector2, etage: int):
 
 func _creer_particules_vol(position: Vector2, etage: int):
 	"""Créer des particules de plumes pour le vol"""
-	for i in range(12 + etage * 4):
+	_creer_particules_vol_intensite(position, etage, 12 + etage * 4)
+
+func _creer_particules_vol_intensite(position: Vector2, etage: int, nombre: int):
+	"""Créer des particules de plumes avec nombre variable"""
+	for i in range(nombre):
 		var particule = ColorRect.new()
 		particule.size = Vector2(8, 12)  # Forme de plume
 		particule.color = [Color(0.9, 0.9, 0.9), Color(0.8, 0.9, 0.9), Color(0.9, 0.8, 0.9)][i % 3]  # Blanc, bleu ciel, rose doux
@@ -564,6 +1147,99 @@ func _creer_particules_vol(position: Vector2, etage: int):
 		
 		tween_part.parallel().tween_property(particule, "rotation", randf_range(0, PI), 1.2)
 		tween_part.parallel().tween_property(particule, "modulate", Color.TRANSPARENT, 1.2)
+		tween_part.tween_callback(particule.queue_free)
+
+func _creer_particules_saut(position: Vector2, etage: int):
+	"""Créer des particules pour le saut"""
+	for i in range(10 + etage * 3):
+		var particule = ColorRect.new()
+		particule.size = Vector2(6, 10)  # Forme allongée
+		particule.color = [Color(0.8, 0.9, 0.6), Color(0.9, 0.8, 0.5)][i % 2]  # Vert clair, jaune doux
+		particule.position = position + Vector2(randf_range(-15, 15), randf_range(-10, 10))
+		get_parent().add_child(particule)
+		
+		var tween_part = create_tween()
+		var direction = Vector2(randf_range(-0.5, 0.5), -1).normalized()
+		var distance = randf_range(60, 100)
+		tween_part.parallel().tween_property(particule, "position", 
+			particule.position + direction * distance, 0.6)
+		tween_part.parallel().tween_property(particule, "modulate", Color.TRANSPARENT, 0.6)
+		tween_part.tween_callback(particule.queue_free)
+
+func _creer_particules_boost(position: Vector2, etage: int):
+	"""Créer des particules pour le boost"""
+	for i in range(12 + etage * 4):
+		var particule = ColorRect.new()
+		particule.size = Vector2(10, 3)  # Forme allongée horizontale
+		particule.color = [Color(0.9, 0.5, 0.2), Color(0.9, 0.3, 0.1), Color(0.8, 0.2, 0.1)][i % 3]  # Orange/rouge
+		particule.position = position + Vector2(randf_range(-20, 20), randf_range(-10, 10))
+		get_parent().add_child(particule)
+		
+		var tween_part = create_tween()
+		var direction = Vector2(randf_range(-1, -0.3), randf_range(-0.3, 0.3)).normalized()
+		var distance = randf_range(80, 120)
+		tween_part.parallel().tween_property(particule, "position", 
+			particule.position + direction * distance, 0.4)
+		tween_part.parallel().tween_property(particule, "modulate", Color.TRANSPARENT, 0.4)
+		tween_part.tween_callback(particule.queue_free)
+
+func _creer_particules_multiplicateur(position: Vector2, etage: int):
+	"""Créer des particules dorées pour le multiplicateur"""
+	for i in range(15 + etage * 5):
+		var particule = ColorRect.new()
+		particule.size = Vector2(8, 8)
+		particule.color = [Color(0.9, 0.8, 0.3), Color(0.9, 0.9, 0.5), Color(0.8, 0.7, 0.4)][i % 3]  # Doré
+		particule.position = position + Vector2(randf_range(-25, 25), randf_range(-25, 25))
+		get_parent().add_child(particule)
+		
+		var tween_part = create_tween()
+		var direction = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized()
+		var distance = randf_range(100, 180)
+		tween_part.parallel().tween_property(particule, "position", 
+			particule.position + direction * distance, 0.8)
+		tween_part.parallel().tween_property(particule, "modulate", Color.TRANSPARENT, 0.8)
+		tween_part.parallel().tween_property(particule, "rotation", randf_range(0, 4*PI), 0.8)
+		tween_part.tween_callback(particule.queue_free)
+
+func _creer_particules_bouclier(position: Vector2, etage: int):
+	"""Créer des particules pour le bouclier"""
+	for i in range(12 + etage * 4):
+		var particule = ColorRect.new()
+		particule.size = Vector2(6, 6)
+		particule.color = [Color(0.4, 0.7, 0.9), Color(0.5, 0.8, 0.9), Color(0.6, 0.9, 0.9)][i % 3]  # Bleu/cyan
+		particule.position = position + Vector2(randf_range(-30, 30), randf_range(-30, 30))
+		get_parent().add_child(particule)
+		
+		var tween_part = create_tween()
+		# Mouvement circulaire pour simuler le bouclier
+		var angle = (i * 2 * PI) / (12 + etage * 4)
+		var rayon = randf_range(50, 100)
+		for j in range(8):
+			var angle_actuel = angle + (j * 0.1)
+			var pos_circulaire = position + Vector2(cos(angle_actuel) * rayon, sin(angle_actuel) * rayon)
+			tween_part.tween_property(particule, "position", pos_circulaire, 0.1)
+		tween_part.parallel().tween_property(particule, "modulate", Color.TRANSPARENT, 0.8)
+		tween_part.tween_callback(particule.queue_free)
+
+func _creer_particules_tornade(position: Vector2, etage: int):
+	"""Créer des particules pour la tornade"""
+	for i in range(18 + etage * 6):
+		var particule = ColorRect.new()
+		particule.size = Vector2(5, 5)
+		particule.color = [Color(0.7, 0.8, 0.9), Color(0.8, 0.7, 0.9), Color(0.9, 0.8, 0.7)][i % 3]  # Couleurs tourbillonnantes
+		particule.position = position + Vector2(randf_range(-20, 20), randf_range(-20, 20))
+		get_parent().add_child(particule)
+		
+		var tween_part = create_tween()
+		# Mouvement en spirale
+		var angle_depart = (i * 2 * PI) / (18 + etage * 6)
+		for j in range(10):
+			var angle_actuel = angle_depart + (j * 0.5)
+			var rayon = 30 + (j * 8)
+			var pos_spirale = position + Vector2(cos(angle_actuel) * rayon, sin(angle_actuel) * rayon - j * 5)
+			tween_part.tween_property(particule, "position", pos_spirale, 0.1)
+		tween_part.parallel().tween_property(particule, "modulate", Color.TRANSPARENT, 1.0)
+		tween_part.parallel().tween_property(particule, "rotation", randf_range(0, 6*PI), 1.0)
 		tween_part.tween_callback(particule.queue_free)
 
 func _jouer_animation_bonus(joueur: Node, etage: int = 0, avance: int = 100):
@@ -612,7 +1288,7 @@ func _jouer_animation_bonus(joueur: Node, etage: int = 0, avance: int = 100):
 			for i in range(couleur_set.size()):
 				tween.tween_property(sprite, "modulate", couleur_set[i], 0.08).set_delay(0.3 + i * 0.08)
 		
-		tween.tween_property(sprite, "modulate", Color.WHITE, 0.2).set_delay(0.5)
+		tween.tween_property(sprite, "modulate", _couleur_joueur(joueur), 0.2).set_delay(0.5)
 		
 		# Grossissement plus spectaculaire aux étages élevés
 		var scale_max = 1.8 + (etage * 0.4)
@@ -1033,3 +1709,101 @@ func _verifier_marqueurs_visibles():
 			print("Bonus %d: MARQUEUR INVALIDE" % [i+1])
 	
 	print("=== FIN VÉRIFICATION ===\n")
+
+# === FONCTIONS POUR LES AFFICHAGES UX (NOTIFICATIONS) ===
+
+func _afficher_notification_evenement(position: Vector2, valeur: int, nom_evenement: String, est_bonus: bool):
+	"""Afficher une notification flottante pour un événement (bonus ou piège)"""
+	var label = Label.new()
+	
+	# Texte selon le type d'événement
+	if est_bonus:
+		label.text = "+%d" % valeur
+		label.add_theme_color_override("font_color", Color(0.2, 1.0, 0.3, 1.0))  # Vert vif
+	else:
+		label.text = "-%d" % abs(valeur)
+		label.add_theme_color_override("font_color", Color(1.0, 0.2, 0.2, 1.0))  # Rouge vif
+	
+	# Style du texte
+	label.add_theme_font_size_override("font_size", 48)
+	label.add_theme_color_override("font_shadow_color", Color.BLACK)
+	label.add_theme_constant_override("shadow_offset_x", 3)
+	label.add_theme_constant_override("shadow_offset_y", 3)
+	
+	# Position : au-dessus du joueur
+	label.global_position = position + Vector2(-50, -80)
+	label.z_index = 100  # Au-dessus de tout
+	
+	# Ajouter à la scène
+	get_parent().add_child(label)
+	
+	# Animation : montée + fade out
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(label, "global_position", label.global_position + Vector2(0, -60), 1.5)
+	tween.tween_property(label, "modulate", Color.TRANSPARENT, 1.5)
+	tween.tween_callback(label.queue_free)
+	
+	# Ajouter un label plus petit pour le nom de l'événement
+	var label_nom = Label.new()
+	label_nom.text = nom_evenement
+	label_nom.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 0.9))
+	label_nom.add_theme_font_size_override("font_size", 20)
+	label_nom.add_theme_color_override("font_shadow_color", Color.BLACK)
+	label_nom.add_theme_constant_override("shadow_offset_x", 2)
+	label_nom.add_theme_constant_override("shadow_offset_y", 2)
+	label_nom.global_position = position + Vector2(-80, -40)
+	label_nom.z_index = 100
+	
+	get_parent().add_child(label_nom)
+	
+	var tween_nom = create_tween()
+	tween_nom.set_parallel(true)
+	tween_nom.tween_property(label_nom, "global_position", label_nom.global_position + Vector2(0, -60), 1.5)
+	tween_nom.tween_property(label_nom, "modulate", Color.TRANSPARENT, 1.5)
+	tween_nom.tween_callback(label_nom.queue_free)
+
+func _afficher_combo(position: Vector2, niveau_combo: int):
+	"""Afficher l'indicateur de combo"""
+	var label_combo = Label.new()
+	label_combo.text = "COMBO x%d" % niveau_combo
+	
+	# Couleur qui devient de plus en plus intense selon le niveau
+	var couleur_combo = Color(1.0, 0.8, 0.0, 1.0)  # Doré de base
+	if niveau_combo >= 3:
+		couleur_combo = Color(1.0, 0.5, 0.0, 1.0)  # Orange
+	if niveau_combo >= 4:
+		couleur_combo = Color(1.0, 0.2, 0.5, 1.0)  # Rose/rouge
+	if niveau_combo >= 5:
+		couleur_combo = Color(0.8, 0.0, 1.0, 1.0)  # Violet/magenta
+	
+	label_combo.add_theme_color_override("font_color", couleur_combo)
+	label_combo.add_theme_font_size_override("font_size", 56 + (niveau_combo * 4))  # Plus gros selon le niveau
+	label_combo.add_theme_color_override("font_shadow_color", Color.BLACK)
+	label_combo.add_theme_constant_override("shadow_offset_x", 4)
+	label_combo.add_theme_constant_override("shadow_offset_y", 4)
+	
+	# Position : au centre-haut du joueur
+	label_combo.global_position = position + Vector2(-100, -150)
+	label_combo.z_index = 101  # Au-dessus de tout
+	
+	get_parent().add_child(label_combo)
+	
+	# Animation spectaculaire : apparition + pulsation + montée + fade out
+	var tween_combo = create_tween()
+	tween_combo.set_parallel(false)
+	
+	# Apparition explosive
+	label_combo.scale = Vector2(0.1, 0.1)
+	tween_combo.tween_property(label_combo, "scale", Vector2(1.5, 1.5), 0.2).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween_combo.tween_property(label_combo, "scale", Vector2(1.0, 1.0), 0.15)
+	
+	# Pulsation
+	tween_combo.parallel().tween_property(label_combo, "scale", Vector2(1.2, 1.2), 0.3)
+	tween_combo.parallel().tween_property(label_combo, "scale", Vector2(1.0, 1.0), 0.3).set_delay(0.3)
+	
+	# Montée et disparition
+	tween_combo.parallel().tween_property(label_combo, "global_position", label_combo.global_position + Vector2(0, -80), 1.2)
+	tween_combo.parallel().tween_property(label_combo, "modulate", Color.TRANSPARENT, 1.2).set_delay(0.3)
+	
+	tween_combo.tween_callback(label_combo.queue_free)

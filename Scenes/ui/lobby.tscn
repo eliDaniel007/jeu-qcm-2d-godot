@@ -24,7 +24,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0, 0, 0, 0.9)
+color = Color(0, 0, 0, 1)
 
 [node name="VBox" type="VBoxContainer" parent="Fond"]
 layout_mode = 1
@@ -33,18 +33,19 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -300.0
-offset_top = -220.0
-offset_right = 300.0
-offset_bottom = 220.0
+offset_left = -400.0
+offset_top = -300.0
+offset_right = 400.0
+offset_bottom = 300.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 30
 
 [node name="Titre" type="Label" parent="Fond/VBox"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 54
-text = "Course poursuite — Mode Multi"
+theme_override_font_sizes/font_size = 72
+text = "Course aux trésors"
 horizontal_alignment = 1
 
 [node name="ChoixParticipants" type="VBoxContainer" parent="Fond/VBox"]
@@ -52,29 +53,39 @@ layout_mode = 2
 
 [node name="LabelParticipants" type="Label" parent="Fond/VBox/ChoixParticipants"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 32
 text = "Nombre de participants"
 
 [node name="HBox" type="HBoxContainer" parent="Fond/VBox/ChoixParticipants"]
 layout_mode = 2
+theme_override_constants/separation = 15
 
 [node name="Bouton2" type="Button" parent="Fond/VBox/ChoixParticipants/HBox"]
-custom_minimum_size = Vector2(48, 44)
+custom_minimum_size = Vector2(80, 60)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
 text = "2"
 
 [node name="Bouton3" type="Button" parent="Fond/VBox/ChoixParticipants/HBox"]
-custom_minimum_size = Vector2(48, 44)
+custom_minimum_size = Vector2(80, 60)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
 text = "3"
 
 [node name="Bouton4" type="Button" parent="Fond/VBox/ChoixParticipants/HBox"]
-custom_minimum_size = Vector2(48, 44)
+custom_minimum_size = Vector2(80, 60)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
 text = "4"
 
 [node name="Noms" type="VBoxContainer" parent="Fond/VBox"]
@@ -82,41 +93,53 @@ layout_mode = 2
 
 [node name="LabelNoms" type="Label" parent="Fond/VBox/Noms"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 28
+theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_font_sizes/font_size = 32
 text = "Saisissez les noms"
 
 [node name="HBox" type="VBoxContainer" parent="Fond/VBox/Noms"]
 layout_mode = 2
+theme_override_constants/separation = 12
 
 [node name="Nom1" type="LineEdit" parent="Fond/VBox/Noms/HBox"]
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_placeholder_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 24
 placeholder_text = "Joueur 1"
 
 [node name="Nom2" type="LineEdit" parent="Fond/VBox/Noms/HBox"]
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_placeholder_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 24
 placeholder_text = "Joueur 2"
 
 [node name="Nom3" type="LineEdit" parent="Fond/VBox/Noms/HBox"]
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_placeholder_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 24
 placeholder_text = "Joueur 3"
 
 [node name="Nom4" type="LineEdit" parent="Fond/VBox/Noms/HBox"]
-custom_minimum_size = Vector2(0, 44)
+custom_minimum_size = Vector2(0, 50)
 layout_mode = 2
-theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_placeholder_color = Color(0.6, 0.6, 0.6, 1)
+theme_override_font_sizes/font_size = 24
 placeholder_text = "Joueur 4"
 
 [node name="BoutonCommencer" type="Button" parent="Fond/VBox"]
-custom_minimum_size = Vector2(240, 60)
+custom_minimum_size = Vector2(320, 70)
 layout_mode = 2
-theme_override_font_sizes/font_size = 26
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_pressed_color = Color(0.9, 0.9, 0.9, 1)
+theme_override_colors/font_hover_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 32
 text = "Commencer"
 
 [node name="EtiquetteErreur" type="Label" parent="Fond/VBox"]

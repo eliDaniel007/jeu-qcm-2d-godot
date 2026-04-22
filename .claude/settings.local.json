@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(awk 'NR>=1010 && NR<=1105' \"C:/Users/elida/OneDrive/Bureau/nouveau-projet-de-jeu-\\(4.4\\)/Scenes/Levels/level.tscn\")",
+      "Bash(awk 'NR>=1080 && NR<=1103' \"C:/Users/elida/OneDrive/Bureau/nouveau-projet-de-jeu-\\(4.4\\)/Scenes/Levels/level.tscn\")"
+    ]
+  }
+}

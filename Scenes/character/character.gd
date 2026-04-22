@@ -117,14 +117,34 @@ func obtenir_couleur() -> Color:
 # Réinitialiser la couleur à la couleur par défaut
 func reinitialiser_couleur() -> void:
 	couleur_personnage = Color.WHITE
-	
+
 	# Appliquer la couleur par défaut au sprite
 	if has_node("AnimatedSprite2D"):
 		var sprite = get_node("AnimatedSprite2D")
 		sprite.modulate = couleur_personnage
 		print("🎨 Couleur réinitialisée pour %s" % nom_joueur)
-	
+
 	# Appliquer aussi la couleur par défaut à l'étiquette du nom
 	if has_node("EtiquetteNom"):
 		var etiquette = get_node("EtiquetteNom")
+		etiquette.modulate = couleur_personnage
+
+# Restaurer l'apparence complète après un effet (piège/bonus/téléportation).
+# Remet visibilité, échelle, rotation, speed_scale à la normale ET restaure
+# la couleur unique du joueur (ne pas utiliser Color.WHITE qui efface la couleur hash).
+func restaurer_apparence() -> void:
+	visible = true
+	modulate = Color.WHITE
+	scale = Vector2.ONE
+	rotation = 0.0
+	if has_node("AnimatedSprite2D"):
+		var sprite = get_node("AnimatedSprite2D")
+		sprite.visible = true
+		sprite.scale = Vector2.ONE
+		sprite.rotation = 0.0
+		sprite.speed_scale = 1.0
+		sprite.modulate = couleur_personnage
+	if has_node("EtiquetteNom"):
+		var etiquette = get_node("EtiquetteNom")
+		etiquette.visible = true
 		etiquette.modulate = couleur_personnage

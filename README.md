@@ -1,15 +1,10 @@
 # Jeu 2D QCM avec Pièges et Bonus
 
-[![Godot](https://img.shields.io/badge/Godot-4.4-478CBF?style=flat-square&logo=godotengine)](https://godotengine.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Language](https://img.shields.io/badge/Language-GDScript-blue.svg?style=flat-square)](https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/index.html)
-[![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey?style=flat-square)](https://godotengine.org/)
-
 Un jeu 2D de type Mario développé avec Godot 4.4, où le joueur progresse en répondant correctement aux questions de culture générale, tout en évitant les pièges et en collectant les bonus !
 
 ![Game Preview](https://via.placeholder.com/800x400/478CBF/FFFFFF?text=Jeu+QCM+2D+Godot)
 
-## Concept du Jeu
+## 🎯 Concept du Jeu
 
 - **Mécanique principale** : Répondre correctement aux QCM pour avancer
 - **Éléments de gameplay** : Pièges qui font reculer, bonus qui font avancer
@@ -72,8 +67,8 @@ Un jeu 2D de type Mario développé avec Godot 4.4, où le joueur progresse en r
 ### Installation
 ```bash
 # Cloner le repository
-git clone https://github.com/eliDaniel007/jeu-qcm-2d-godot.git
-cd jeu-qcm-2d-godot
+git clone https://github.com/VOTRE_USERNAME/nom-du-repo.git
+cd nom-du-repo
 
 # Ouvrir avec Godot
 # Ouvrir Godot → Importer → Sélectionner le dossier du projet

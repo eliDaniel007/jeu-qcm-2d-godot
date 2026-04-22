@@ -47,6 +47,11 @@ var distance_restante_apres_teleportation = 0.0
 # Variable pour détecter le passage de la porte
 var position_precedente = Vector2.ZERO
 
+# Système d'anticipation des pièges/bonus à venir.
+var _label_anticipation: Label = null
+var _dernier_evenement_annonce: String = ""
+var _derniere_alerte_jouee: float = 0.0
+
 # Variables disponibles pour extension future
 
 func _ready():
@@ -70,6 +75,10 @@ func set_joueur_actif(nouveau_joueur: Node2D) -> void:
 	# Réinitialiser les indicateurs de suivi par tour
 	position_precedente = Vector2.ZERO
 	distance_restante_apres_teleportation = 0.0
+	# Détacher le label d'anticipation du précédent joueur
+	_masquer_anticipation()
+	if _label_anticipation and is_instance_valid(_label_anticipation) and _label_anticipation.get_parent():
+		_label_anticipation.get_parent().remove_child(_label_anticipation)
 	# Recharger l'étage du joueur (par défaut 0)
 	etage_actuel = etage_par_joueur.get(joueur, 0)
 
@@ -106,6 +115,10 @@ func deplacer_joueur(temps_reaction: float):
 	
 	position_cible = nouvelle_position
 	en_mouvement = true
+	# Petit whoosh au départ du mouvement
+	var root = get_tree().root
+	if root.has_node("SoundManager"):
+		root.get_node("SoundManager").jouer("whoosh")
 	print("Déplacement de %d pixels vers %s - Moving: %s" % [distance_pixels, direction_mouvement, en_mouvement])
 
 func verifier_porte_atteinte(position_actuelle: Vector2) -> bool:
@@ -146,6 +159,29 @@ func teleporter_vers_etage_superieur():
 	var position_teleportation = Vector2(config_etage["sortie_x"], config_etage["sortie_y"])
 	joueur.global_position = position_teleportation
 	etage_actuel = etage_suivant
+
+	# Remettre à zéro la détection de porte pour éviter un re-déclenchement
+	# immédiat depuis la position pré-téléportation.
+	position_precedente = Vector2.ZERO
+
+	# SÉCURITÉ : Forcer la réinitialisation visuelle du joueur après téléportation.
+	# Utilise restaurer_apparence() qui préserve la couleur unique du joueur
+	# (ne pas remettre modulate à Color.WHITE: ça efface la couleur du personnage).
+	if joueur.has_method("restaurer_apparence"):
+		joueur.restaurer_apparence()
+	else:
+		joueur.visible = true
+		joueur.modulate = Color.WHITE
+		joueur.scale = Vector2.ONE
+		joueur.rotation = 0.0
+		if sprite_anime:
+			sprite_anime.visible = true
+			sprite_anime.modulate = Color.WHITE
+			sprite_anime.scale = Vector2.ONE
+			sprite_anime.rotation = 0.0
+
+	print("🔧 Joueur réinitialisé visuellement après changement d'étage")
+	
 	# Mémoriser l'étage pour ce joueur
 	etage_par_joueur[joueur] = etage_actuel
 	print("Téléporté vers l'étage %d à la position (%f, %f)" % [etage_suivant, position_teleportation.x, position_teleportation.y])
@@ -211,6 +247,8 @@ func _process(delta):
 					joueur = joueur_temp  # Restaurer le joueur original
 	
 	if en_mouvement and position_cible and joueur:
+		# Anticipation: scanner la trajectoire pour prévenir d'un piège/bonus imminent
+		_mettre_a_jour_anticipation()
 		# Vérifier si le joueur atteint une porte pendant le mouvement
 		var porte_atteinte = verifier_porte_atteinte(joueur.global_position)
 		if porte_atteinte:
@@ -233,6 +271,7 @@ func _process(delta):
 			en_mouvement = false
 			distance_restante_apres_teleportation = 0.0  # Reset la distance restante
 			position_precedente = Vector2.ZERO  # Reset la position précédente
+			_masquer_anticipation()
 			if sprite_anime:
 				sprite_anime.stop()
 			
@@ -257,6 +296,111 @@ func _process(delta):
 						sprite_anime.play("MoveDown")
 					else:
 						sprite_anime.play("MoveUp")
+
+# --- Anticipation pièges/bonus ---
+
+func _creer_label_anticipation() -> void:
+	if _label_anticipation and is_instance_valid(_label_anticipation):
+		return
+	_label_anticipation = Label.new()
+	_label_anticipation.z_index = 200
+	_label_anticipation.add_theme_font_size_override("font_size", 30)
+	_label_anticipation.add_theme_color_override("font_color", Color(1, 1, 1))
+	_label_anticipation.add_theme_color_override("font_outline_color", Color(0, 0, 0, 1.0))
+	_label_anticipation.add_theme_constant_override("outline_size", 10)
+	_label_anticipation.add_theme_constant_override("shadow_offset_x", 3)
+	_label_anticipation.add_theme_constant_override("shadow_offset_y", 3)
+	_label_anticipation.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	_label_anticipation.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_label_anticipation.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_label_anticipation.visible = false
+
+func _mettre_a_jour_anticipation() -> void:
+	if not joueur or not is_instance_valid(joueur):
+		return
+	var gestionnaire = get_node_or_null("../gestionnaire_pieges_bonus_simple")
+	if gestionnaire == null:
+		return
+
+	_creer_label_anticipation()
+	# Attacher le label sous le joueur actif pour qu'il suive.
+	if _label_anticipation.get_parent() != joueur:
+		if _label_anticipation.get_parent():
+			_label_anticipation.get_parent().remove_child(_label_anticipation)
+		joueur.add_child(_label_anticipation)
+		_label_anticipation.position = Vector2(-140, -165)
+		_label_anticipation.size = Vector2(280, 44)
+
+	# Chercher le prochain événement sur la trajectoire (même direction X que le mouvement).
+	var pos = joueur.global_position
+	var dir = sign(position_cible.x - pos.x) if position_cible else 0.0
+	if dir == 0.0:
+		_masquer_anticipation()
+		return
+
+	var seuil_y = 40.0
+	var meilleur_distance = INF
+	var meilleur_type = ""
+	var meilleur_nom = ""
+
+	for p in gestionnaire.pieges:
+		if abs(p.y - pos.y) > seuil_y:
+			continue
+		var dx = p.x - pos.x
+		if sign(dx) != dir:
+			continue
+		if abs(dx) < meilleur_distance:
+			meilleur_distance = abs(dx)
+			meilleur_type = "piege"
+			meilleur_nom = p.nom
+	for b in gestionnaire.bonus:
+		if abs(b.y - pos.y) > seuil_y:
+			continue
+		var dx = b.x - pos.x
+		if sign(dx) != dir:
+			continue
+		if abs(dx) < meilleur_distance:
+			meilleur_distance = abs(dx)
+			meilleur_type = "bonus"
+			meilleur_nom = b.nom
+
+	# Ne prévenir que dans un rayon raisonnable (400 px ≈ 8 secondes à 50 px/s).
+	if meilleur_type == "" or meilleur_distance > 400.0:
+		_masquer_anticipation()
+		return
+
+	var secondes = meilleur_distance / max(1.0, vitesse)
+	var cle = "%s|%s" % [meilleur_type, meilleur_nom]
+	if cle != _dernier_evenement_annonce:
+		_dernier_evenement_annonce = cle
+		# Jouer un son d'alerte (une fois par événement), pas pour chaque frame.
+		var maintenant = Time.get_ticks_msec() / 1000.0
+		if maintenant - _derniere_alerte_jouee > 0.6:
+			_derniere_alerte_jouee = maintenant
+			var root = get_tree().root
+			if root.has_node("SoundManager"):
+				root.get_node("SoundManager").jouer("alerte")
+
+	var prefixe = "⚠ PIÈGE" if meilleur_type == "piege" else "✨ BONUS"
+	var couleur = Color(0.95, 0.35, 0.40) if meilleur_type == "piege" else Color(0.35, 0.80, 0.45)
+	_label_anticipation.text = "%s dans %.1fs" % [prefixe, secondes]
+	_label_anticipation.add_theme_color_override("font_color", couleur)
+	_label_anticipation.visible = true
+	# Pivot de scale au centre pour pulsation visible
+	_label_anticipation.pivot_offset = _label_anticipation.size / 2.0
+	# Pulsation progressive: plus c'est proche, plus c'est marqué
+	if secondes < 2.0:
+		var intensite: float = clamp((2.0 - secondes) / 2.0, 0.0, 1.0)
+		var amp: float = 0.12 + 0.22 * intensite
+		var pulse: float = 1.0 + amp * sin(Time.get_ticks_msec() / 70.0)
+		_label_anticipation.scale = Vector2(pulse, pulse)
+	else:
+		_label_anticipation.scale = Vector2.ONE
+
+func _masquer_anticipation() -> void:
+	_dernier_evenement_annonce = ""
+	if _label_anticipation and is_instance_valid(_label_anticipation):
+		_label_anticipation.visible = false
 
 # Fonctions pour changer la direction de déplacement
 func set_direction_droite():
@@ -325,6 +469,11 @@ func declencher_animation_victoire():
 	if joueur.has_method("set_controle_manuel"):
 		joueur.set_controle_manuel(false)
 	
+	# Son de victoire
+	var root = get_tree().root
+	if root.has_node("SoundManager"):
+		root.get_node("SoundManager").jouer("victoire")
+
 	# Émettre le signal de victoire avec le joueur gagnant
 	victoire_atteinte.emit(joueur)
 	
@@ -402,13 +551,20 @@ func animer_victoire():
 		0.3
 	).set_trans(Tween.TRANS_SINE)
 	
-	# Remettre les valeurs par défaut après un délai
+	# Remettre les valeurs par défaut après un délai.
+	# Utilise restaurer_apparence pour conserver la couleur unique du joueur.
+	var joueur_ref = joueur
+	var sprite_ref = sprite_anime
 	get_tree().create_timer(1.5).timeout.connect(func():
-		joueur.rotation = 0.0
-		joueur.scale = Vector2(1.0, 1.0)
-		if sprite_anime:
-			sprite_anime.stop()
-			sprite_anime.set_frame(0)
+		if is_instance_valid(joueur_ref):
+			if joueur_ref.has_method("restaurer_apparence"):
+				joueur_ref.restaurer_apparence()
+			else:
+				joueur_ref.rotation = 0.0
+				joueur_ref.scale = Vector2.ONE
+		if is_instance_valid(sprite_ref):
+			sprite_ref.stop()
+			sprite_ref.set_frame(0)
 		print("Animation de victoire terminée !")
 	)
 
@@ -513,13 +669,13 @@ func _verifier_fin_partie():
 				joueur.set_controle_manuel(false)
 		
 		# Masquer le QCM seulement quand TOUS sont arrivés
-		var qcm = scene.get_node_or_null("QCM")
+		var qcm = scene.get_node_or_null("UILayer/QCM")
 		if qcm:
 			qcm.visible = false
 			print("QCM masqué - Tous les joueurs sont arrivés")
 		
 		# Masquer le bouton ARRÊTER
-		var bouton_arreter = scene.get_node_or_null("BoutonArreter")
+		var bouton_arreter = scene.get_node_or_null("UILayer/BoutonArreter")
 		if bouton_arreter:
 			bouton_arreter.visible = false
 			print("Bouton ARRÊTER masqué")
@@ -559,7 +715,11 @@ func _afficher_classement_final(joueurs_scene: Array):
 	var scene_classement = load("res://Scenes/ui/classement.tscn")
 	if scene_classement:
 		var ui_classement = scene_classement.instantiate()
-		get_tree().current_scene.add_child(ui_classement)
+		var ui_layer = get_tree().current_scene.get_node_or_null("UILayer")
+		if ui_layer:
+			ui_layer.add_child(ui_classement)
+		else:
+			get_tree().current_scene.add_child(ui_classement)
 		if ui_classement.has_method("afficher"):
 			ui_classement.afficher(classement_final)
 		else:

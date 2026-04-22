@@ -20,20 +20,46 @@ extends Control
 
 var nombre_participants: int = 2
 
+const LONGUEUR_NOM_MAX = 20
+
 func _ready():
 	randomize()
+	_appliquer_theme()
 	# Sélection par défaut à 2 participants
 	_mettre_en_evidence_bouton(2)
 	for nb in boutons_nb_participants.keys():
 		boutons_nb_participants[nb].pressed.connect(_on_bouton_nb_participants_appuye.bind(nb))
 	bouton_commencer.pressed.connect(_on_bouton_commencer)
+	# Validation longueur: limite visuelle directe sur LineEdit
+	for champ in champs_noms:
+		champ.max_length = LONGUEUR_NOM_MAX
 	_mettre_a_jour_champs_noms()
 	# UI Design: Le lobby doit bloquer le jeu au lancement
 	var racine = get_tree().current_scene
 	if racine:
-		var qcm = racine.get_node_or_null("QCM")
+		var qcm = racine.get_node_or_null("UILayer/QCM")
 		if qcm:
 			qcm.visible = false
+	# Animation d'entrée échelonnée
+	var vbox = $Fond/VBox
+	for i in range(vbox.get_child_count()):
+		UITheme.animer_entree(vbox.get_child(i), i * 0.07)
+
+func _appliquer_theme() -> void:
+	# Boutons de sélection du nombre de participants
+	for bouton in boutons_nb_participants.values():
+		UITheme.appliquer_bouton(bouton, UITheme.COULEUR_FOND_CLAIR)
+	# Bouton commencer: couleur accent
+	UITheme.appliquer_bouton(bouton_commencer, UITheme.COULEUR_SUCCES)
+	# Champs de texte
+	for champ in champs_noms:
+		UITheme.appliquer_line_edit(champ)
+	# Fond plus doux
+	if has_node("Fond"):
+		$Fond.color = UITheme.COULEUR_FOND
+	# Étiquette erreur
+	etiquette_erreur.add_theme_color_override("font_color", UITheme.COULEUR_DANGER)
+	etiquette_erreur.add_theme_font_size_override("font_size", 20)
 
 func _on_bouton_nb_participants_appuye(nb: int) -> void:
 	nombre_participants = nb
@@ -42,7 +68,11 @@ func _on_bouton_nb_participants_appuye(nb: int) -> void:
 
 func _mettre_en_evidence_bouton(nb: int) -> void:
 	for k in boutons_nb_participants.keys():
-		boutons_nb_participants[k].button_pressed = (k == nb)
+		var b: Button = boutons_nb_participants[k]
+		if k == nb:
+			UITheme.appliquer_bouton(b, UITheme.COULEUR_PRIMAIRE)
+		else:
+			UITheme.appliquer_bouton(b, UITheme.COULEUR_FOND_CLAIR)
 
 func _mettre_a_jour_champs_noms() -> void:
 	for i in range(champs_noms.size()):
@@ -65,7 +95,7 @@ func _on_bouton_commencer() -> void:
 	if not scene_racine:
 		etiquette_erreur.text = "Erreur: scène courante introuvable"
 		return
-	var multi = scene_racine.get_node("QCM/MultiManager")
+	var multi = scene_racine.get_node("UILayer/QCM/MultiManager")
 	if not multi:
 		etiquette_erreur.text = "Erreur: MultiManager introuvable (QCM/MultiManager)"
 		return
@@ -143,11 +173,11 @@ func _on_bouton_commencer() -> void:
 	# Masquer le lobby et démarrer
 	visible = false
 	# Afficher le QCM maintenant que la partie peut commencer
-	var qcm = scene_racine.get_node_or_null("QCM")
+	var qcm = scene_racine.get_node_or_null("UILayer/QCM")
 	if qcm:
 		qcm.visible = true
 	
 	# Afficher le bouton ARRÊTER quand la partie commence
-	var bouton_arreter = scene_racine.get_node_or_null("BoutonArreter")
+	var bouton_arreter = scene_racine.get_node_or_null("UILayer/BoutonArreter")
 	if bouton_arreter and bouton_arreter.has_method("set_bouton_visible"):
 		bouton_arreter.set_bouton_visible(true)

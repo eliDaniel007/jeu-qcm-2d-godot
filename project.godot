@@ -1,16 +1,33 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
 
 config/name="Nouveau projet de jeu (4.4)"
 run/main_scene="uid://beuwsxauk5raw"
-config/features=PackedStringArray("4.4", "Forward Plus")
+config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
+
+[autoload]
+
+SoundManager="*res://Scenes/audio/sound_manager.gd"
 
 [display]
 
-window/size/viewport_width=2640
+window/size/viewport_width=2650
 window/size/viewport_height=1080
+window/size/mode=3
+window/size/borderless=true
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep_width"
+window/size/mode.editor=0
 
 [dotnet]
 
@@ -19,3 +36,4 @@ project/assembly_name="Nouveau projet de jeu"
 [rendering]
 
 textures/canvas_textures/default_texture_filter=0
+environment/defaults/default_clear_color=Color(0.35, 0.50, 0.68, 1)
