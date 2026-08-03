@@ -10,8 +10,8 @@ config_version=5
 
 [application]
 
-config/name="Nouveau projet de jeu (4.4)"
-run/main_scene="uid://beuwsxauk5raw"
+config/name="Quizzy"
+run/main_scene="res://Scenes/menu/splash_studio.tscn"
 config/features=PackedStringArray("4.5", "Forward Plus")
 config/icon="res://icon.svg"
 
