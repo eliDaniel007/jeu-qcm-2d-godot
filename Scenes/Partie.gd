@@ -9,6 +9,7 @@ const INFOS := {
 	"decouverte": {"nom": "Découverte", "emoji": "🌱", "age": "4-6 ans"},
 	"malin":      {"nom": "Malin",      "emoji": "⭐", "age": "7-9 ans"},
 	"expert":     {"nom": "Expert",     "emoji": "🧠", "age": "10 ans et +"},
+	"genie":      {"nom": "Génie",      "emoji": "🎓", "age": "Ados & adultes"},
 }
 
 func definir_palier(id: String) -> void:
