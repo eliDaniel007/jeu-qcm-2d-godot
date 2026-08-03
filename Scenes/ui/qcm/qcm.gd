@@ -111,13 +111,26 @@ func _creer_barre_timer() -> void:
 
 func charger_questions():
 	var file = FileAccess.open("res://data/questions.json", FileAccess.READ)
-	if file:
-		var data = file.get_as_text()
-		questions = JSON.parse_string(data)
-		file.close()
-		print("Nombre de questions chargées :", questions.size())
-	else:
+	if not file:
 		print("Impossible d'ouvrir le fichier de questions !")
+		return
+	var data = file.get_as_text()
+	file.close()
+	var toutes = JSON.parse_string(data)
+	if toutes == null:
+		print("Erreur d'analyse du fichier de questions !")
+		return
+	# Ne garder que les questions du palier choisi (Partie.palier).
+	# Rétro-compatible : une question sans champ 'palier' = Découverte.
+	var palier_choisi: String = Partie.palier
+	questions = []
+	for q in toutes:
+		if String(q.get("palier", "decouverte")) == palier_choisi:
+			questions.append(q)
+	# Filet de sécurité : si le palier est vide, tout charger plutôt que rien.
+	if questions.is_empty():
+		questions = toutes
+	print("Questions chargées (palier %s) : %d" % [palier_choisi, questions.size()])
 
 func afficher_question():
 	var q: Dictionary = questions[question_index]

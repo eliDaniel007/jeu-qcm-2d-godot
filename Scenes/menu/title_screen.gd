@@ -3,7 +3,7 @@ extends Control
 ## Look partagé avec les Options et le lobby (voir UITheme, thème « menu clair »).
 ## Les images sont chargées si présentes, sinon versions texte/emoji.
 
-const JEU_SCENE := "res://Scenes/Levels/level.tscn"
+const PALIER_SCENE := "res://Scenes/menu/palier_screen.tscn"
 const OPTIONS_SCENE := "res://Scenes/menu/options_screen.tscn"
 const LOGO_QUIZZY := "res://assets/branding/quizzy_logo.png"
 const MASCOTTE := "res://assets/branding/quizzy_grenouille.png"
@@ -96,7 +96,7 @@ func _faire_flotter(noeud: Control) -> void:
 
 func _sur_jouer() -> void:
 	SoundManager.jouer("click")
-	get_tree().change_scene_to_file(JEU_SCENE)
+	get_tree().change_scene_to_file(PALIER_SCENE)
 
 func _sur_options() -> void:
 	SoundManager.jouer("click")
