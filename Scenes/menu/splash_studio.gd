@@ -3,7 +3,10 @@ extends Control
 ## puis enchaîne sur l'écran-titre. Se saute au clic / toucher / touche.
 
 const TITRE_SCENE := "res://Scenes/menu/title_screen.tscn"
-const LOGO_PATH := "res://assets/branding/codex_labs.png"
+const LOGOS_CANDIDATS := [
+	"res://assets/branding/codex_labs.jpg",
+	"res://assets/branding/codex_labs.png",
+]
 
 var _fini := false
 
@@ -19,9 +22,10 @@ func _ready() -> void:
 	centre.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(centre)
 
-	if ResourceLoader.exists(LOGO_PATH):
+	var chemin_logo := _trouver_logo()
+	if chemin_logo != "":
 		var img := TextureRect.new()
-		img.texture = load(LOGO_PATH)
+		img.texture = load(chemin_logo)
 		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		img.custom_minimum_size = Vector2(440, 260)
 		centre.add_child(img)
@@ -39,6 +43,13 @@ func _ready() -> void:
 	tw.tween_interval(1.3)
 	tw.tween_property(self, "modulate:a", 0.0, 0.6)
 	tw.tween_callback(_aller_au_titre)
+
+## Renvoie le premier logo présent parmi les candidats, sinon "".
+func _trouver_logo() -> String:
+	for chemin in LOGOS_CANDIDATS:
+		if ResourceLoader.exists(chemin):
+			return chemin
+	return ""
 
 func _unhandled_input(event: InputEvent) -> void:
 	var appuye := false

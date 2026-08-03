@@ -4,6 +4,7 @@ extends Control
 ## s'affichent — l'écran fonctionne donc même avant que l'art soit prêt.
 
 const JEU_SCENE := "res://Scenes/Levels/level.tscn"
+const OPTIONS_SCENE := "res://Scenes/menu/options_screen.tscn"
 const LOGO_QUIZZY := "res://assets/branding/quizzy_logo.png"
 const MASCOTTE := "res://assets/branding/quizzy_grenouille.png"
 
@@ -70,8 +71,7 @@ func _sur_jouer() -> void:
 	get_tree().change_scene_to_file(JEU_SCENE)
 
 func _sur_options() -> void:
-	# À implémenter (EPIC 3 : réglages son/langue/contrôles)
-	pass
+	get_tree().change_scene_to_file(OPTIONS_SCENE)
 
 func _sur_quitter() -> void:
 	get_tree().quit()

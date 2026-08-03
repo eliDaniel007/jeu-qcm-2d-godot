@@ -16,6 +16,9 @@ var _cache: Dictionary = {}
 var _volume_effets_db: float = -4.0
 var _volume_ambiance_db: float = -18.0
 var _mute: bool = false
+var _volume_lin: float = 0.63  # ~ -4 dB : correspond au volume par défaut
+
+const CHEMIN_REGLAGES := "user://reglages.cfg"
 
 func _ready() -> void:
 	# Pool de 6 lecteurs pour pouvoir empiler plusieurs sons simultanés.
@@ -28,6 +31,7 @@ func _ready() -> void:
 	_ambiance_player.volume_db = _volume_ambiance_db
 	add_child(_ambiance_player)
 	_prechauffer_cache()
+	_charger_reglages()
 
 func _prechauffer_cache() -> void:
 	# Pré-générer les sons courants pour éviter les micro-saccades.
@@ -56,10 +60,43 @@ func arreter_ambiance() -> void:
 		_ambiance_player.stop()
 
 func basculer_mute() -> bool:
-	_mute = not _mute
+	definir_mute(not _mute)
+	return _mute
+
+# --- Réglages exposés à l'écran Options ---
+
+func est_mute() -> bool:
+	return _mute
+
+func definir_mute(v: bool) -> void:
+	_mute = v
 	if _mute:
 		arreter_ambiance()
-	return _mute
+	_sauvegarder_reglages()
+
+func obtenir_volume_effets() -> float:
+	# Renvoie le volume en linéaire (0.0 à 1.0), pratique pour un slider.
+	return _volume_lin
+
+func definir_volume_effets(lin: float) -> void:
+	_volume_lin = clamp(lin, 0.0, 1.0)
+	_volume_effets_db = -80.0 if _volume_lin <= 0.001 else linear_to_db(_volume_lin)
+	_sauvegarder_reglages()
+
+func _charger_reglages() -> void:
+	var cfg := ConfigFile.new()
+	if cfg.load(CHEMIN_REGLAGES) != OK:
+		return
+	_volume_lin = clamp(float(cfg.get_value("audio", "volume", _volume_lin)), 0.0, 1.0)
+	_volume_effets_db = -80.0 if _volume_lin <= 0.001 else linear_to_db(_volume_lin)
+	_mute = bool(cfg.get_value("audio", "mute", _mute))
+
+func _sauvegarder_reglages() -> void:
+	var cfg := ConfigFile.new()
+	cfg.load(CHEMIN_REGLAGES)  # garde les autres sections si présentes
+	cfg.set_value("audio", "volume", _volume_lin)
+	cfg.set_value("audio", "mute", _mute)
+	cfg.save(CHEMIN_REGLAGES)
 
 func _lecteur_libre() -> AudioStreamPlayer:
 	for p in _lecteurs:
