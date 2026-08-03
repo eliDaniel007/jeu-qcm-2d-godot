@@ -4,7 +4,7 @@
 [ext_resource type="Texture2D" uid="uid://bxpksv8hovinu" path="res://Scenes/Levels/Tilesets/assetenvi (5).png" id="2_yjxcc"]
 [ext_resource type="Texture2D" uid="uid://f4xr1wy881p7" path="res://Scenes/Levels/Tilesets/ciel (2).png" id="3_lkqqh"]
 [ext_resource type="PackedScene" uid="uid://djavp717cq3jj" path="res://Scenes/Levels/path_manager.tscn" id="5_rv5g2"]
-[ext_resource type="PackedScene" uid="uid://dmhu8vpjdaqex" path="res://Scenes/qcm/qcm.tscn" id="5_tq1so"]
+[ext_resource type="PackedScene" uid="uid://dmhu8vpjdaqex" path="res://Scenes/ui/qcm/qcm.tscn" id="5_tq1so"]
 [ext_resource type="Texture2D" uid="uid://crujgeja37ixw" path="res://Scenes/Levels/Tilesets/port.png" id="6_rv5g2"]
 [ext_resource type="Texture2D" uid="uid://bkn58t0dj3g5j" path="res://Scenes/Levels/Tilesets/porteG.png" id="7_lhx7y"]
 [ext_resource type="Texture2D" uid="uid://b12yx8wkygbwi" path="res://Scenes/Levels/Tilesets/porteD.png" id="8_i5435"]

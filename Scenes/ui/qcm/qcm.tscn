@@ -1,7 +1,7 @@
 [gd_scene load_steps=7 format=3 uid="uid://dmhu8vpjdaqex"]
 
-[ext_resource type="Script" uid="uid://dxt52rm4a0qoe" path="res://Scenes/qcm/qcm.gd" id="1_s6xrm"]
-[ext_resource type="Script" uid="uid://fu1cba5cpl3c" path="res://Scenes/qcm/qcm_multiplayer.gd" id="2_multi"]
+[ext_resource type="Script" uid="uid://dxt52rm4a0qoe" path="res://Scenes/ui/qcm/qcm.gd" id="1_s6xrm"]
+[ext_resource type="Script" uid="uid://fu1cba5cpl3c" path="res://Scenes/ui/qcm/qcm_multiplayer.gd" id="2_multi"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_2six8"]
 content_margin_left = 20.0
