@@ -27,7 +27,7 @@ window/size/viewport_height=1080
 window/size/mode=3
 window/size/borderless=true
 window/stretch/mode="canvas_items"
-window/stretch/aspect="keep_width"
+window/stretch/aspect="keep"
 window/size/mode.editor=0
 
 [dotnet]
@@ -39,4 +39,4 @@ project/assembly_name="Nouveau projet de jeu"
 textures/canvas_textures/default_texture_filter=0
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
-environment/defaults/default_clear_color=Color(0.35, 0.5, 0.68, 1)
+environment/defaults/default_clear_color=Color(0.4, 0.7, 0.94, 1)
