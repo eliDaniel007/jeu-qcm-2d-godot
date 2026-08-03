@@ -150,3 +150,88 @@ static func animer_entree(noeud: CanvasItem, delai: float = 0.0, duree: float = 
 		ctrl.position = pos_finale + Vector2(0, 20)
 		tw.parallel().tween_property(ctrl, "position", pos_finale, duree) \
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT).set_delay(delai)
+
+# =====================================================================
+#  Thème CLAIR « menu » — écrans hors-jeu (titre, options, lobby).
+#  Look enfant : ciel dégradé, cartes blanches arrondies, gros boutons
+#  colorés. Ne modifie pas le thème sombre utilisé pendant la partie.
+# =====================================================================
+
+const MENU_CIEL_HAUT  = Color(0.53, 0.84, 0.98)  # bleu ciel clair (haut)
+const MENU_CIEL_BAS   = Color(0.29, 0.61, 0.92)  # bleu plus profond (bas)
+const MENU_CARTE      = Color(1.00, 1.00, 1.00)  # blanc carte
+const MENU_TEXTE      = Color(0.11, 0.22, 0.34)  # navy foncé (texte sur clair)
+const MENU_TEXTE_DOUX = Color(0.42, 0.52, 0.62)
+const MENU_VERT       = Color(0.30, 0.78, 0.45)  # action principale (Jouer/Commencer)
+const MENU_BLEU       = Color(0.26, 0.58, 0.98)  # secondaire (Options/Retour)
+const MENU_ROUGE      = Color(0.95, 0.42, 0.44)  # quitter
+const MENU_JAUNE      = Color(1.00, 0.78, 0.25)  # accent
+const MENU_GRIS       = Color(0.86, 0.90, 0.95)  # bouton neutre non-sélectionné
+
+## Ajoute un fond dégradé ciel plein écran, placé derrière tout le reste.
+static func fond_ciel(hote: Control) -> void:
+	var grad := Gradient.new()
+	grad.set_color(0, MENU_CIEL_HAUT)
+	grad.set_color(1, MENU_CIEL_BAS)
+	var tex := GradientTexture2D.new()
+	tex.gradient = grad
+	tex.fill_from = Vector2(0, 0)
+	tex.fill_to = Vector2(0, 1)
+	var tr := TextureRect.new()
+	tr.texture = tex
+	tr.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tr.stretch_mode = TextureRect.STRETCH_SCALE
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hote.add_child(tr)
+	hote.move_child(tr, 0)
+
+## Carte blanche arrondie avec ombre douce (pour poser du contenu sur le ciel).
+static func style_carte_claire() -> StyleBoxFlat:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = MENU_CARTE
+	sb.corner_radius_top_left = 24
+	sb.corner_radius_top_right = 24
+	sb.corner_radius_bottom_left = 24
+	sb.corner_radius_bottom_right = 24
+	sb.shadow_color = Color(0, 0, 0, 0.18)
+	sb.shadow_size = 12
+	sb.shadow_offset = Vector2(0, 6)
+	sb.content_margin_left = 40
+	sb.content_margin_right = 40
+	sb.content_margin_top = 34
+	sb.content_margin_bottom = 34
+	return sb
+
+## Fabrique un gros bouton de menu arrondi, coloré, avec animation au survol.
+static func bouton_menu(texte: String, couleur: Color = MENU_VERT, taille := Vector2(300, 68)) -> Button:
+	var b := Button.new()
+	b.text = texte
+	b.custom_minimum_size = taille
+	b.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	b.add_theme_font_size_override("font_size", 30)
+	appliquer_bouton(b, couleur)  # style arrondi + hover scale + texte blanc
+	return b
+
+## Champ de saisie clair (fond blanc cassé, texte foncé) — pour les menus.
+static func appliquer_line_edit_clair(champ: LineEdit) -> void:
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.95, 0.97, 1.0)
+	sb.corner_radius_top_left = 10
+	sb.corner_radius_top_right = 10
+	sb.corner_radius_bottom_left = 10
+	sb.corner_radius_bottom_right = 10
+	sb.border_width_left = 2
+	sb.border_width_right = 2
+	sb.border_width_top = 2
+	sb.border_width_bottom = 2
+	sb.border_color = Color(0.72, 0.80, 0.90)
+	sb.content_margin_left = 14
+	sb.content_margin_right = 14
+	sb.content_margin_top = 10
+	sb.content_margin_bottom = 10
+	champ.add_theme_stylebox_override("normal", sb)
+	var focus := sb.duplicate() as StyleBoxFlat
+	focus.border_color = MENU_BLEU
+	champ.add_theme_stylebox_override("focus", focus)
+	champ.add_theme_color_override("font_color", MENU_TEXTE)
+	champ.add_theme_color_override("font_placeholder_color", MENU_TEXTE_DOUX)

@@ -46,20 +46,67 @@ func _ready():
 		UITheme.animer_entree(vbox.get_child(i), i * 0.07)
 
 func _appliquer_theme() -> void:
-	# Boutons de sélection du nombre de participants
-	for bouton in boutons_nb_participants.values():
-		UITheme.appliquer_bouton(bouton, UITheme.COULEUR_FOND_CLAIR)
-	# Bouton commencer: couleur accent
-	UITheme.appliquer_bouton(bouton_commencer, UITheme.COULEUR_SUCCES)
-	# Champs de texte
-	for champ in champs_noms:
-		UITheme.appliquer_line_edit(champ)
-	# Fond plus doux
+	# Même identité que l'écran-titre : ciel dégradé + carte blanche.
+	UITheme.fond_ciel(self)
 	if has_node("Fond"):
-		$Fond.color = UITheme.COULEUR_FOND
-	# Étiquette erreur
+		$Fond.color = Color(0, 0, 0, 0)  # transparent : laisse voir le ciel
+
+	# Carte blanche derrière le contenu (centrée + recalée après mise en page).
+	_ajouter_carte($Fond/VBox)
+
+	# Textes en navy foncé (lisibles sur carte blanche).
+	$Fond/VBox/Titre.add_theme_color_override("font_color", UITheme.MENU_TEXTE)
+	$Fond/VBox/ChoixParticipants/LabelParticipants.add_theme_color_override("font_color", UITheme.MENU_TEXTE)
+	$Fond/VBox/Noms/LabelNoms.add_theme_color_override("font_color", UITheme.MENU_TEXTE)
+
+	# Boutons nombre de participants : style de départ (neutre).
+	for bouton in boutons_nb_participants.values():
+		_styler_bouton_nb(bouton, false)
+
+	# Bouton commencer : vert (action principale).
+	UITheme.appliquer_bouton(bouton_commencer, UITheme.MENU_VERT)
+	bouton_commencer.add_theme_font_size_override("font_size", 32)
+
+	# Champs de saisie clairs.
+	for champ in champs_noms:
+		UITheme.appliquer_line_edit_clair(champ)
+
+	# Étiquette erreur.
 	etiquette_erreur.add_theme_color_override("font_color", UITheme.COULEUR_DANGER)
 	etiquette_erreur.add_theme_font_size_override("font_size", 20)
+
+## Bouton « nombre de joueurs » : bleu plein si sélectionné, gris clair sinon.
+func _styler_bouton_nb(bouton: Button, selectionne: bool) -> void:
+	if selectionne:
+		UITheme.appliquer_bouton(bouton, UITheme.MENU_BLEU)  # texte blanc
+	else:
+		UITheme.appliquer_bouton(bouton, UITheme.MENU_GRIS)
+		for etat in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+			bouton.add_theme_color_override(etat, UITheme.MENU_TEXTE)  # texte foncé lisible
+	bouton.add_theme_font_size_override("font_size", 30)
+
+## Ajoute une carte blanche arrondie derrière la VBox, recalée sur sa taille.
+func _ajouter_carte(vbox: Control) -> void:
+	var carte := Panel.new()
+	carte.add_theme_stylebox_override("panel", UITheme.style_carte_claire())
+	carte.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	$Fond.add_child(carte)
+	$Fond.move_child(carte, 0)  # derrière la VBox
+	_caler_carte(carte, vbox)
+	get_viewport().size_changed.connect(func(): _caler_carte(carte, vbox))
+
+func _caler_carte(carte: Panel, vbox: Control) -> void:
+	await get_tree().process_frame  # laisser le stylage fixer les tailles mini
+	if not is_instance_valid(carte) or not is_instance_valid(vbox):
+		return
+	# Centrer la VBox sur son contenu réel, puis laisser une frame de mise en page.
+	vbox.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	await get_tree().process_frame
+	if not is_instance_valid(carte) or not is_instance_valid(vbox):
+		return
+	var marge := Vector2(56, 44)
+	carte.position = vbox.position - marge
+	carte.size = vbox.size + marge * 2.0
 
 func _on_bouton_nb_participants_appuye(nb: int) -> void:
 	nombre_participants = nb
@@ -69,10 +116,7 @@ func _on_bouton_nb_participants_appuye(nb: int) -> void:
 func _mettre_en_evidence_bouton(nb: int) -> void:
 	for k in boutons_nb_participants.keys():
 		var b: Button = boutons_nb_participants[k]
-		if k == nb:
-			UITheme.appliquer_bouton(b, UITheme.COULEUR_PRIMAIRE)
-		else:
-			UITheme.appliquer_bouton(b, UITheme.COULEUR_FOND_CLAIR)
+		_styler_bouton_nb(b, k == nb)
 
 func _mettre_a_jour_champs_noms() -> void:
 	for i in range(champs_noms.size()):

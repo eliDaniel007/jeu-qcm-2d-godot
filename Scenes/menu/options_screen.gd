@@ -1,40 +1,33 @@
 extends Control
-## Écran des réglages de Quizzy.
+## Écran des réglages de Quizzy — même identité visuelle que l'écran-titre.
 ## Volume des sons + couper le son (mémorisés via SoundManager),
 ## plein écran (PC uniquement), et retour à l'écran-titre.
 
 const TITRE_SCENE := "res://Scenes/menu/title_screen.tscn"
 
 func _ready() -> void:
-	# Fond ciel, cohérent avec l'écran-titre
-	var bg := ColorRect.new()
-	bg.color = Color(0.42, 0.78, 0.96)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
+	UITheme.fond_ciel(self)
 
-	# Panneau centré
+	# Carte blanche centrée
 	var centre := CenterContainer.new()
 	centre.set_anchors_preset(Control.PRESET_FULL_RECT)
 	add_child(centre)
 
-	var panneau := PanelContainer.new()
-	panneau.custom_minimum_size = Vector2(560, 0)
-	centre.add_child(panneau)
-
-	var marge := MarginContainer.new()
-	for cote in ["left", "right", "top", "bottom"]:
-		marge.add_theme_constant_override("margin_" + cote, 36)
-	panneau.add_child(marge)
+	var carte := PanelContainer.new()
+	carte.custom_minimum_size = Vector2(580, 0)
+	carte.add_theme_stylebox_override("panel", UITheme.style_carte_claire())
+	centre.add_child(carte)
 
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 26)
-	marge.add_child(v)
+	carte.add_child(v)
 
 	# Titre
 	var titre := Label.new()
 	titre.text = "Options"
 	titre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	titre.add_theme_font_size_override("font_size", 56)
+	titre.add_theme_font_size_override("font_size", 52)
+	titre.add_theme_color_override("font_color", UITheme.MENU_TEXTE)
 	v.add_child(titre)
 
 	# Volume des sons
@@ -42,8 +35,9 @@ func _ready() -> void:
 	slider.min_value = 0.0
 	slider.max_value = 1.0
 	slider.step = 0.05
-	slider.custom_minimum_size = Vector2(260, 0)
+	slider.custom_minimum_size = Vector2(240, 0)
 	slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	slider.set_value_no_signal(SoundManager.obtenir_volume_effets())
 	slider.value_changed.connect(_sur_volume)
 	v.add_child(_ligne("Volume des sons", slider))
@@ -64,21 +58,24 @@ func _ready() -> void:
 		v.add_child(_ligne("Plein écran", chk_fs))
 
 	# Bouton retour
-	var retour := Button.new()
-	retour.text = "Retour"
-	retour.custom_minimum_size = Vector2(0, 60)
-	retour.add_theme_font_size_override("font_size", 30)
+	var retour := UITheme.bouton_menu("Retour", UITheme.MENU_BLEU, Vector2(0, 60))
+	retour.size_flags_horizontal = Control.SIZE_FILL
 	retour.pressed.connect(_sur_retour)
 	v.add_child(retour)
 
-## Construit une ligne "Libellé ........ [contrôle]".
+	# Entrée animée
+	UITheme.animer_entree(carte, 0.0)
+
+## Construit une ligne « Libellé .......... [contrôle] » (texte foncé sur carte claire).
 func _ligne(libelle: String, controle: Control) -> HBoxContainer:
 	var h := HBoxContainer.new()
 	h.add_theme_constant_override("separation", 18)
 	var lbl := Label.new()
 	lbl.text = libelle
 	lbl.add_theme_font_size_override("font_size", 28)
+	lbl.add_theme_color_override("font_color", UITheme.MENU_TEXTE)
 	lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	h.add_child(lbl)
 	h.add_child(controle)
 	return h
