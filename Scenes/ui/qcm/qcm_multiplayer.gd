@@ -16,8 +16,10 @@ var classement: Array = []    # [ { "nom": String, "noeud": Node2D } ]
 var classements_arrivees: Array = []   # ordre d'arrivée effectif
 var partie_terminee_bool: bool = false
 
-# Indicateur flottant "▼" au-dessus du joueur actif (visuel multi-local).
-var indicateur_actif: Label = null
+# Indicateur flottant (triangle dessiné) au-dessus du joueur actif.
+# Dessiné en Polygon2D plutôt qu'un emoji/texte : marche sur toutes les
+# plateformes, y compris le web (aucune police requise).
+var indicateur_actif: Node2D = null
 var indicateur_tween: Tween = null
 
 
@@ -73,15 +75,19 @@ func _annoncer_tour():
 func _creer_indicateur() -> void:
 	if indicateur_actif and is_instance_valid(indicateur_actif):
 		return
-	indicateur_actif = Label.new()
-	indicateur_actif.text = "▼"
-	indicateur_actif.add_theme_font_size_override("font_size", 42)
-	indicateur_actif.add_theme_color_override("font_color", Color(1.00, 0.75, 0.25))
-	indicateur_actif.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	indicateur_actif.add_theme_constant_override("outline_size", 6)
-	indicateur_actif.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	# Triangle pointant vers le bas (tip en bas), dessiné à la main.
+	indicateur_actif = Node2D.new()
 	indicateur_actif.z_index = 50
-	indicateur_actif.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Contour foncé (légèrement plus grand) pour le détacher du fond.
+	var contour := Polygon2D.new()
+	contour.polygon = PackedVector2Array([Vector2(-27, -39), Vector2(27, -39), Vector2(0, 6)])
+	contour.color = Color(0, 0, 0, 0.9)
+	indicateur_actif.add_child(contour)
+	# Remplissage or.
+	var remplissage := Polygon2D.new()
+	remplissage.polygon = PackedVector2Array([Vector2(-22, -34), Vector2(22, -34), Vector2(0, 0)])
+	remplissage.color = Color(1.00, 0.75, 0.25)
+	indicateur_actif.add_child(remplissage)
 	get_tree().current_scene.add_child(indicateur_actif)
 
 func _mettre_a_jour_indicateur(joueur: Node) -> void:
@@ -95,7 +101,7 @@ func _mettre_a_jour_indicateur(joueur: Node) -> void:
 		if indicateur_actif.get_parent():
 			indicateur_actif.get_parent().remove_child(indicateur_actif)
 		joueur.add_child(indicateur_actif)
-	indicateur_actif.position = Vector2(-18, -90)
+	indicateur_actif.position = Vector2(0, -90)
 	indicateur_actif.visible = true
 	indicateur_actif.modulate.a = 1.0
 	# Animation de rebond continue
