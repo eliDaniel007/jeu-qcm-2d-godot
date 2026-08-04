@@ -53,9 +53,10 @@ func afficher(noms_ordonnes: Array) -> void:
 	rejouer.custom_minimum_size = Vector2(200, 56)
 	rejouer.add_theme_font_size_override("font_size", 20)
 	rejouer.pressed.connect(func():
-		print("🔄 Bouton REJOUER pressé !")
-		queue_free()
-		_redemarrer_jeu_complet()
+		# Recharge proprement la scène de jeu : repart au lobby avec un état neuf,
+		# tout en gardant le palier choisi (autoload Partie). Fiable sur le web.
+		SoundManager.jouer("click")
+		get_tree().reload_current_scene()
 	)
 
 	var quitter = Button.new()
