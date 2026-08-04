@@ -48,12 +48,8 @@ func _ready() -> void:
 		m.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		mascotte = m
 	else:
-		var em := Label.new()
-		em.text = "🐸"
-		em.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		em.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		em.add_theme_font_size_override("font_size", 150)
-		mascotte = em
+		# Repli dessiné (web-safe) tant qu'aucune image de mascotte n'est fournie.
+		mascotte = load("res://Scenes/menu/frimousse_grenouille.gd").new()
 	mascotte.set_anchors_preset(Control.PRESET_FULL_RECT)
 	mascotte.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	support.add_child(mascotte)

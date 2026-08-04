@@ -224,10 +224,10 @@ func _on_button_pressed(bouton):
 			path_manager.deplacer_joueur(deplacement)
 		else:
 			print("ERREUR: Path manager non trouvé !")
-		timer_label.text = "✅ Bonne réponse !"
+		timer_label.text = "Bravo !"
 		timer_label.add_theme_color_override("font_color", UITheme.COULEUR_SUCCES)
 	else:
-		timer_label.text = "❌ Mauvaise réponse — la bonne : %s" % bouton_bonne_reponse.text
+		timer_label.text = "Dommage — la bonne : %s" % bouton_bonne_reponse.text
 		timer_label.add_theme_color_override("font_color", UITheme.COULEUR_DANGER)
 	# Laisser plus de temps pour lire la bonne réponse quand on s'est trompé
 	var attente = 1.2 if bonne else 1.8

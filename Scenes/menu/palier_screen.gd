@@ -34,7 +34,7 @@ func _ready() -> void:
 	v.add_child(titre)
 
 	var sous_titre := Label.new()
-	sous_titre.text = "Le jeu grandit avec toi 🐸"
+	sous_titre.text = "Le jeu grandit avec toi !"
 	sous_titre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sous_titre.add_theme_font_size_override("font_size", 26)
 	sous_titre.add_theme_color_override("font_color", UITheme.MENU_TEXTE)
@@ -44,12 +44,16 @@ func _ready() -> void:
 	espace.custom_minimum_size = Vector2(0, 8)
 	v.add_child(espace)
 
-	# Un gros bouton par palier
-	for p in PALIERS:
+	# Un gros bouton par palier (icône = pastilles de difficulté dessinées)
+	for i in range(PALIERS.size()):
+		var p: Dictionary = PALIERS[i]
 		var infos: Dictionary = Partie.INFOS[p.id]
-		var texte := "%s  %s   ·   %s" % [infos.emoji, infos.nom, infos.age]
+		var texte := "%s   ·   %s" % [infos.nom, infos.age]
 		var b := UITheme.bouton_menu(texte, p.couleur, Vector2(500, 88))
 		b.add_theme_font_size_override("font_size", 32)
+		b.add_theme_constant_override("h_separation", 16)
+		b.icon = _icone_niveau(i + 1)
+		b.expand_icon = false
 		b.pressed.connect(_sur_palier.bind(p.id))
 		v.add_child(b)
 
@@ -64,6 +68,25 @@ func _ready() -> void:
 		var enfant := v.get_child(i)
 		if enfant is CanvasItem:
 			UITheme.animer_entree(enfant, 0.06 * i)
+
+## Fabrique une icône de n pastilles blanches (dessinée → web-safe).
+## Sert d'indicateur de difficulté : 1 pastille = facile … 4 = très difficile.
+func _icone_niveau(n: int) -> ImageTexture:
+	var d := 22          # diamètre d'une pastille
+	var esp := 8         # espacement
+	var w: int = n * d + (n - 1) * esp
+	var h := d
+	var img := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	var r := d / 2.0 - 1.0
+	for i in range(n):
+		var cx := i * (d + esp) + d / 2.0
+		var cy := h / 2.0
+		for y in range(h):
+			for x in range(w):
+				if Vector2(x - cx, y - cy).length() <= r:
+					img.set_pixel(x, y, Color(1, 1, 1))
+	return ImageTexture.create_from_image(img)
 
 func _sur_palier(id: String) -> void:
 	SoundManager.jouer("click")

@@ -17,7 +17,7 @@ func afficher(noms_ordonnes: Array) -> void:
 
 	# Titre
 	var titre = Label.new()
-	titre.text = "🏆 Classement Final"
+	titre.text = "Classement Final"
 	titre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	titre.add_theme_color_override("font_color", UITheme.COULEUR_ACCENT)
 	titre.add_theme_font_size_override("font_size", 56)
@@ -49,7 +49,7 @@ func afficher(noms_ordonnes: Array) -> void:
 	actions.add_theme_constant_override("separation", 20)
 
 	var rejouer = Button.new()
-	rejouer.text = "🔄 Rejouer"
+	rejouer.text = "Rejouer"
 	rejouer.custom_minimum_size = Vector2(200, 56)
 	rejouer.add_theme_font_size_override("font_size", 20)
 	rejouer.pressed.connect(func():
@@ -59,7 +59,7 @@ func afficher(noms_ordonnes: Array) -> void:
 	)
 
 	var quitter = Button.new()
-	quitter.text = "❌ Quitter"
+	quitter.text = "Quitter"
 	quitter.custom_minimum_size = Vector2(200, 56)
 	quitter.add_theme_font_size_override("font_size", 20)
 	quitter.pressed.connect(func():
@@ -87,24 +87,8 @@ func _creer_ligne_classement(rang: int, nom: String, couleurs_medaille: Array) -
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	panel.add_child(hbox)
 
-	var emoji = ""
-	match rang:
-		0: emoji = "🥇"
-		1: emoji = "🥈"
-		2: emoji = "🥉"
-		_: emoji = "🎯"
-
-	var l_medaille = Label.new()
-	l_medaille.text = emoji
-	l_medaille.add_theme_font_size_override("font_size", 40)
-	hbox.add_child(l_medaille)
-
-	var l_rang = Label.new()
-	l_rang.text = "%d." % (rang + 1)
-	l_rang.add_theme_font_size_override("font_size", 32)
-	l_rang.add_theme_color_override("font_color", couleur_rang)
-	l_rang.custom_minimum_size = Vector2(50, 0)
-	hbox.add_child(l_rang)
+	# Badge rond dessiné (or/argent/bronze) avec le numéro de rang — web-safe.
+	hbox.add_child(_badge_rang(rang, couleur_rang))
 
 	var l_nom = Label.new()
 	l_nom.text = String(nom)
@@ -113,6 +97,39 @@ func _creer_ligne_classement(rang: int, nom: String, couleurs_medaille: Array) -
 	hbox.add_child(l_nom)
 
 	return panel
+
+## Badge circulaire dessiné (StyleBox arrondi) avec le numéro de rang.
+## Remplace les emojis médailles 🥇🥈🥉 (invisibles sur le web).
+func _badge_rang(rang: int, couleur: Color) -> Control:
+	var taille := 54
+	var badge := Panel.new()
+	badge.custom_minimum_size = Vector2(taille, taille)
+	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = couleur
+	var r := int(taille / 2)
+	sb.corner_radius_top_left = r
+	sb.corner_radius_top_right = r
+	sb.corner_radius_bottom_left = r
+	sb.corner_radius_bottom_right = r
+	sb.border_width_left = 3
+	sb.border_width_right = 3
+	sb.border_width_top = 3
+	sb.border_width_bottom = 3
+	sb.border_color = couleur.darkened(0.3)
+	badge.add_theme_stylebox_override("panel", sb)
+	var num := Label.new()
+	num.text = str(rang + 1)
+	num.add_theme_font_size_override("font_size", 30)
+	# Texte foncé sur médaille claire, blanc sur badge foncé.
+	var c_texte := Color(0.15, 0.12, 0.05) if couleur.get_luminance() > 0.5 else Color(1, 1, 1)
+	num.add_theme_color_override("font_color", c_texte)
+	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	num.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	num.set_anchors_preset(Control.PRESET_FULL_RECT)
+	num.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.add_child(num)
+	return badge
 
 func _retour_lobby() -> void:
 	var scene = get_tree().current_scene
@@ -291,7 +308,7 @@ func _afficher_message_redemarrage():
 	
 	# Créer un label temporaire pour afficher le message
 	var message_label = Label.new()
-	message_label.text = "🔄 Retour au lobby..."
+	message_label.text = "Retour au lobby..."
 	message_label.add_theme_font_size_override("font_size", 32)
 	message_label.add_theme_color_override("font_color", Color.WHITE)
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -331,7 +348,7 @@ func _afficher_message_quitter():
 	"""Affiche un message temporaire de fermeture"""
 	# Créer un label temporaire pour afficher le message
 	var message_label = Label.new()
-	message_label.text = "❌ Fermeture du jeu..."
+	message_label.text = "Fermeture du jeu..."
 	message_label.add_theme_font_size_override("font_size", 32)
 	message_label.add_theme_color_override("font_color", Color.WHITE)
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

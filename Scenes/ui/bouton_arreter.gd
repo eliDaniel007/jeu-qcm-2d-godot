@@ -73,7 +73,7 @@ func _afficher_message_redemarrage():
 	"""Affiche un message temporaire de redémarrage"""
 	# Créer un label temporaire pour afficher le message
 	var message_label = Label.new()
-	message_label.text = "🔄 Redémarrage en cours..."
+	message_label.text = "Redémarrage en cours..."
 	message_label.add_theme_font_size_override("font_size", 32)
 	message_label.add_theme_color_override("font_color", Color.WHITE)
 	message_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
