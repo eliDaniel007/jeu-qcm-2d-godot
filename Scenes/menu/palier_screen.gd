@@ -8,10 +8,10 @@ const TITRE_SCENE := "res://Scenes/menu/title_screen.tscn"
 
 # Ordre d'affichage + couleur de chaque palier.
 const PALIERS := [
-	{"id": "decouverte", "couleur": Color(0.30, 0.78, 0.45)},  # vert
-	{"id": "malin",      "couleur": Color(0.98, 0.55, 0.20)},  # orange
-	{"id": "expert",     "couleur": Color(0.55, 0.42, 0.90)},  # violet
-	{"id": "genie",      "couleur": Color(0.90, 0.30, 0.38)},  # rouge/crimson
+	{"id": "malin",   "couleur": Color(0.98, 0.55, 0.20)},  # orange
+	{"id": "expert",  "couleur": Color(0.55, 0.42, 0.90)},  # violet
+	{"id": "genie",   "couleur": Color(0.90, 0.30, 0.38)},  # crimson
+	{"id": "legende", "couleur": Color(0.24, 0.26, 0.34)},  # charbon (élite)
 ]
 
 func _ready() -> void:

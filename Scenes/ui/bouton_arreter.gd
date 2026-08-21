@@ -5,8 +5,8 @@ extends Control
 
 @onready var bouton_arreter: Button = $BoutonArreterUI
 
-# Variable pour stocker la référence au dialog de confirmation
-var dialog_confirmation: ConfirmationDialog = null
+# Menu pause personnalisé (aux couleurs de Quizzy)
+var popup: CanvasLayer = null
 
 func _ready():
 	print("=== INITIALISATION BOUTON ARRÊTER ===")
@@ -30,31 +30,66 @@ func _on_bouton_arreter_pressed():
 	_demander_confirmation_arret()
 
 func _demander_confirmation_arret():
-	"""Affiche une boîte de dialogue de confirmation avant l'arrêt"""
-	# Créer une boîte de dialogue de confirmation
-	dialog_confirmation = ConfirmationDialog.new()
-	dialog_confirmation.title = "Arrêter la partie"
-	dialog_confirmation.dialog_text = "Êtes-vous sûr de vouloir arrêter ?\nCela redémarrera complètement le jeu."
-	
-	# Connecter les signaux
-	dialog_confirmation.confirmed.connect(_arreter_jeu)
-	dialog_confirmation.canceled.connect(_on_annulation)
-	
-	# Ajouter à la scène et afficher
-	add_child(dialog_confirmation)
-	dialog_confirmation.popup_centered()
-	
-	print("Dialog de confirmation affiché")
+	"""Affiche un menu pause personnalisé (même identité que les menus)."""
+	if popup and is_instance_valid(popup):
+		return
+	# CanvasLayer : rend en plein écran, au-dessus du jeu.
+	popup = CanvasLayer.new()
+	popup.layer = 200
+	add_child(popup)
 
-func _on_annulation():
-	"""Appelé quand l'utilisateur annule l'arrêt"""
-	print("Arrêt annulé - la partie continue")
-	# Fermer la boîte de dialogue
-	if dialog_confirmation:
-		dialog_confirmation.hide()
-		dialog_confirmation.queue_free()
-		dialog_confirmation = null
-	# Ne rien faire, la partie continue normalement
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP  # bloque le jeu derrière
+	popup.add_child(dim)
+
+	var centre := CenterContainer.new()
+	centre.set_anchors_preset(Control.PRESET_FULL_RECT)
+	popup.add_child(centre)
+
+	var carte := PanelContainer.new()
+	carte.custom_minimum_size = Vector2(560, 0)
+	carte.add_theme_stylebox_override("panel", UITheme.style_carte_claire())
+	centre.add_child(carte)
+
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 20)
+	carte.add_child(v)
+
+	var titre := Label.new()
+	titre.text = "Pause"
+	titre.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	titre.add_theme_font_size_override("font_size", 48)
+	titre.add_theme_color_override("font_color", UITheme.MENU_TEXTE)
+	v.add_child(titre)
+
+	var msg := Label.new()
+	msg.text = "Que veux-tu faire ?"
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg.add_theme_font_size_override("font_size", 24)
+	msg.add_theme_color_override("font_color", UITheme.MENU_TEXTE_DOUX)
+	v.add_child(msg)
+
+	v.add_child(_bouton_popup("Reprendre", UITheme.MENU_BLEU, _fermer_popup))
+	v.add_child(_bouton_popup("Recommencer", Color(0.98, 0.55, 0.20), _arreter_jeu))
+	v.add_child(_bouton_popup("Changer de niveau", Color(0.55, 0.42, 0.90), _changer_niveau))
+
+func _bouton_popup(txt: String, couleur: Color, cb: Callable) -> Button:
+	var b := UITheme.bouton_menu(txt, couleur, Vector2(0, 58))
+	b.size_flags_horizontal = Control.SIZE_FILL
+	b.pressed.connect(cb)
+	return b
+
+func _fermer_popup():
+	SoundManager.jouer("click")
+	if popup and is_instance_valid(popup):
+		popup.queue_free()
+		popup = null
+
+func _changer_niveau():
+	SoundManager.jouer("click")
+	get_tree().change_scene_to_file("res://Scenes/menu/palier_screen.tscn")
 
 func _arreter_jeu():
 	"""Arrête le jeu complètement et redémarre une nouvelle partie"""

@@ -44,6 +44,19 @@ func _ready():
 	var vbox = $Fond/VBox
 	for i in range(vbox.get_child_count()):
 		UITheme.animer_entree(vbox.get_child(i), i * 0.07)
+	# Bouton pour revenir au choix du niveau
+	_ajouter_bouton_retour_niveaux()
+
+func _ajouter_bouton_retour_niveaux() -> void:
+	var b := UITheme.bouton_menu("< Niveaux", UITheme.MENU_BLEU, Vector2(180, 52))
+	b.add_theme_font_size_override("font_size", 22)
+	b.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	b.position = Vector2(24, 24)
+	b.pressed.connect(func():
+		SoundManager.jouer("click")
+		get_tree().change_scene_to_file("res://Scenes/menu/palier_screen.tscn")
+	)
+	add_child(b)
 
 func _appliquer_theme() -> void:
 	# Même identité que l'écran-titre : ciel dégradé + carte blanche.

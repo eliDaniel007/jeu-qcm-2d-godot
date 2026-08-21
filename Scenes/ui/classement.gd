@@ -67,11 +67,22 @@ func afficher(noms_ordonnes: Array) -> void:
 		_quitter_jeu()
 	)
 
+	var niveau = Button.new()
+	niveau.text = "Changer de niveau"
+	niveau.custom_minimum_size = Vector2(240, 56)
+	niveau.add_theme_font_size_override("font_size", 20)
+	niveau.pressed.connect(func():
+		SoundManager.jouer("click")
+		get_tree().change_scene_to_file("res://Scenes/menu/palier_screen.tscn")
+	)
+
 	actions.add_child(rejouer)
+	actions.add_child(niveau)
 	actions.add_child(quitter)
 	conteneur.add_child(actions)
 
 	UITheme.appliquer_bouton(rejouer, UITheme.COULEUR_SUCCES)
+	UITheme.appliquer_bouton(niveau, UITheme.COULEUR_PRIMAIRE)
 	UITheme.appliquer_bouton(quitter, UITheme.COULEUR_DANGER)
 	UITheme.animer_entree(actions, 0.3 + noms_ordonnes.size() * 0.2 + 0.2, 0.4)
 
