@@ -154,14 +154,14 @@ func _créer_item_état(effet: String, durée: float) -> HBoxContainer:
 	var barre_progression = ProgressBar.new()
 	barre_progression.min_value = 0
 	barre_progression.max_value = 100
-	barre_progression.value = (durée_restante / 10.0) * 100  # Normaliser sur 10 secondes
+	barre_progression.value = (durée / 10.0) * 100  # Normaliser sur 10 secondes
 	barre_progression.custom_minimum_size = Vector2(100, 20)
 	barre_progression.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	container.add_child(barre_progression)
 	
 	# Temps restant
 	var label_temps = Label.new()
-	label_temps.text = "%.1fs" % durée_restante
+	label_temps.text = "%.1fs" % durée
 	label_temps.custom_minimum_size = Vector2(40, 0)
 	container.add_child(label_temps)
 	
