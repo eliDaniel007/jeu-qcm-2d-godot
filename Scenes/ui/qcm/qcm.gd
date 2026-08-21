@@ -28,6 +28,8 @@ var start_time = 0.0
 var player = null
 var pret_a_lancer = false
 var _dernier_tic_seconde: int = -1
+var _en_pause: bool = false
+var _pause_debut: float = 0.0
 
 func _ready():
 	# En multi-tours, joueur_cible est défini par qcm_multiplayer AVANT chaque tour.
@@ -169,7 +171,23 @@ func demarrer_tour():
 	_set_reponses_interactives(true)
 	demarrer_timer()
 
+## Gèle le chrono (le QCM utilise l'horloge réelle → on mémorise l'instant de pause).
+func mettre_en_pause() -> void:
+	if _en_pause:
+		return
+	_en_pause = true
+	_pause_debut = Time.get_ticks_msec() / 1000.0
+
+## Reprend : décale le départ de la durée de pause pour ne pas perdre de temps.
+func reprendre() -> void:
+	if not _en_pause:
+		return
+	_en_pause = false
+	start_time += (Time.get_ticks_msec() / 1000.0) - _pause_debut
+
 func _process(delta):
+	if _en_pause:
+		return
 	if timer_actif:
 		var elapsed = (Time.get_ticks_msec() / 1000.0) - start_time
 		var reste = DUREE - elapsed

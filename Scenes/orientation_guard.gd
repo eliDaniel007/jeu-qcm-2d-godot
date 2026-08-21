@@ -7,15 +7,18 @@ var _voile: Control
 
 func _ready() -> void:
 	layer = 128  # au-dessus de tout le reste
+	process_mode = Node.PROCESS_MODE_ALWAYS  # visible même si le jeu est en pause
 	_voile = _construire_voile()
 	add_child(_voile)
 	get_viewport().size_changed.connect(_maj)
 	_maj()
 
 func _maj() -> void:
-	var vp := get_viewport().get_visible_rect().size
+	# Taille PHYSIQUE de la fenêtre/canvas (pas la taille logique 2650x1080,
+	# qui reste toujours en paysage à cause du stretch).
+	var w := DisplayServer.window_get_size()
 	# Portrait = nettement plus haut que large.
-	_voile.visible = vp.y > vp.x * 1.05
+	_voile.visible = float(w.y) > float(w.x) * 1.05
 
 func _construire_voile() -> Control:
 	var racine := Control.new()

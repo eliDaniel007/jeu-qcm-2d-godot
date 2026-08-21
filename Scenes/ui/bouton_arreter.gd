@@ -13,9 +13,12 @@ func _ready():
 	
 	# Vérifier que le bouton est trouvé
 	if bouton_arreter:
-		print("✅ Bouton ARRÊTER trouvé")
-		# Connecter le signal du bouton
+		print("Bouton pause trouvé")
 		bouton_arreter.pressed.connect(_on_bouton_arreter_pressed)
+		# Style cohérent avec les menus (rouge arrondi, texte clair)
+		UITheme.appliquer_bouton(bouton_arreter, UITheme.MENU_ROUGE)
+		bouton_arreter.add_theme_font_size_override("font_size", 22)
+		bouton_arreter.text = "Pause"
 	else:
 		print("❌ Bouton ARRÊTER NON TROUVÉ")
 	
@@ -36,7 +39,14 @@ func _demander_confirmation_arret():
 	# CanvasLayer : rend en plein écran, au-dessus du jeu.
 	popup = CanvasLayer.new()
 	popup.layer = 200
+	popup.process_mode = Node.PROCESS_MODE_ALWAYS  # le menu reste actif en pause
 	add_child(popup)
+
+	# Mettre le jeu en PAUSE : gèle mouvements/animations + chrono du QCM.
+	var qcm := get_tree().current_scene.get_node_or_null("UILayer/QCM")
+	if qcm and qcm.has_method("mettre_en_pause"):
+		qcm.mettre_en_pause()
+	get_tree().paused = true
 
 	var dim := ColorRect.new()
 	dim.color = Color(0, 0, 0, 0.55)
@@ -83,17 +93,24 @@ func _bouton_popup(txt: String, couleur: Color, cb: Callable) -> Button:
 
 func _fermer_popup():
 	SoundManager.jouer("click")
+	# Reprendre : réactiver le jeu et décaler le chrono du QCM.
+	get_tree().paused = false
+	var qcm := get_tree().current_scene.get_node_or_null("UILayer/QCM")
+	if qcm and qcm.has_method("reprendre"):
+		qcm.reprendre()
 	if popup and is_instance_valid(popup):
 		popup.queue_free()
 		popup = null
 
 func _changer_niveau():
 	SoundManager.jouer("click")
+	get_tree().paused = false  # ne pas laisser la scène suivante figée
 	get_tree().change_scene_to_file("res://Scenes/menu/palier_screen.tscn")
 
 func _arreter_jeu():
-	"""Arrête le jeu complètement et redémarre une nouvelle partie"""
-	print("🔄 REDÉMARRAGE COMPLET DU JEU...")
+	"""Recommence : recharge la scène (garde le palier). Enlève la pause d'abord."""
+	get_tree().paused = false  # sinon la scène rechargée resterait figée
+	print("Redémarrage de la partie...")
 	
 	# Afficher un message de confirmation
 	_afficher_message_redemarrage()
