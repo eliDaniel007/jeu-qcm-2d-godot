@@ -3,6 +3,10 @@ extends Control
 ## Look partagé avec les Options et le lobby (voir UITheme, thème « menu clair »).
 ## Les images sont chargées si présentes, sinon versions texte/emoji.
 
+## Tag de build : à comparer entre Godot et la version en ligne pour repérer
+## un simple cache navigateur. À incrémenter à chaque déploiement notable.
+const BUILD := "build 2026-08-21 - No7"
+
 const PALIER_SCENE := "res://Scenes/menu/palier_screen.tscn"
 const OPTIONS_SCENE := "res://Scenes/menu/options_screen.tscn"
 const LOGO_QUIZZY := "res://assets/branding/quizzy_logo.png"
@@ -79,6 +83,25 @@ func _ready() -> void:
 		var enfant := v.get_child(i)
 		if enfant is CanvasItem:
 			UITheme.animer_entree(enfant, 0.06 * i)
+
+	# Tag de build en bas à droite (pour distinguer un cache navigateur)
+	var lbl_build := Label.new()
+	lbl_build.text = BUILD
+	lbl_build.add_theme_font_size_override("font_size", 18)
+	lbl_build.add_theme_color_override("font_color", Color(1, 1, 1, 0.6))
+	lbl_build.anchor_left = 1.0
+	lbl_build.anchor_top = 1.0
+	lbl_build.anchor_right = 1.0
+	lbl_build.anchor_bottom = 1.0
+	lbl_build.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	lbl_build.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	lbl_build.offset_left = -320
+	lbl_build.offset_top = -44
+	lbl_build.offset_right = -18
+	lbl_build.offset_bottom = -12
+	lbl_build.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	lbl_build.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(lbl_build)
 
 ## Léger va-et-vient vertical en boucle pour donner vie à la mascotte.
 func _faire_flotter(noeud: Control) -> void:
