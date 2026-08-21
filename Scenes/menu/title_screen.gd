@@ -5,7 +5,7 @@ extends Control
 
 ## Tag de build : à comparer entre Godot et la version en ligne pour repérer
 ## un simple cache navigateur. À incrémenter à chaque déploiement notable.
-const BUILD := "build 2026-08-21 - No7"
+const BUILD := "build 2026-08-21 - No8"
 
 const PALIER_SCENE := "res://Scenes/menu/palier_screen.tscn"
 const OPTIONS_SCENE := "res://Scenes/menu/options_screen.tscn"

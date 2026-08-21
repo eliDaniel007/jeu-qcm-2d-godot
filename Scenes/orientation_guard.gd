@@ -8,10 +8,20 @@ var _voile: Control
 func _ready() -> void:
 	layer = 128  # au-dessus de tout le reste
 	process_mode = Node.PROCESS_MODE_ALWAYS  # visible même si le jeu est en pause
+	_forcer_cadrage()
 	_voile = _construire_voile()
 	add_child(_voile)
 	get_viewport().size_changed.connect(_maj)
 	_maj()
+
+## Force le cadrage "keep" au RUNTIME (indépendant de project.godot, qui perd
+## parfois le réglage à l'export). Garantit le plateau entier, sans répétition.
+func _forcer_cadrage() -> void:
+	var w := get_window()
+	if w:
+		w.content_scale_mode = Window.CONTENT_SCALE_MODE_CANVAS_ITEMS
+		w.content_scale_aspect = Window.CONTENT_SCALE_ASPECT_KEEP
+		w.content_scale_size = Vector2i(2650, 1080)
 
 func _maj() -> void:
 	# Taille PHYSIQUE de la fenêtre/canvas (pas la taille logique 2650x1080,
